@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 local espEnabled = false
@@ -48,6 +47,11 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local function createGUI()
+    local existing = player:FindFirstChild("PlayerGui"):FindFirstChild("ScriptaxGUI")
+    if existing then
+        existing:Destroy()
+    end
+
     local gui = Instance.new("ScreenGui")
     gui.Name = "ScriptaxGUI"
     gui.ResetOnSpawn = false
@@ -144,10 +148,10 @@ local function createGUI()
     end)
 end
 
--- Ejecutar al inicio
+-- Run at start
 createGUI()
 
--- Volver a crear GUI al reaparecer
+-- Recreate GUI on respawn
 player.CharacterAdded:Connect(function()
     wait(1)
     createGUI()

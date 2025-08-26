@@ -1,40 +1,30 @@
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
+
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ColorToggleGUI"
+gui.Name = "CrystalESP_GUI"
 
--- Botón de coloreo
-local boton = Instance.new("TextButton")
-boton.Size = UDim2.new(0, 140, 0, 40)
-boton.Position = UDim2.new(0.5, -70, 0.1, 0)
-boton.AnchorPoint = Vector2.new(0.5, 0)
-boton.Text = "Colorear: OFF"
-boton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-boton.TextColor3 = Color3.new(1, 1, 1)
-boton.Draggable = true
-boton.Active = true
-boton.Visible = true
-boton.Parent = gui
+-- Create unified button
+local mainButton = Instance.new("TextButton")
+mainButton.Size = UDim2.new(0, 180, 0, 40)
+mainButton.Position = UDim2.new(0.5, -90, 0.1, 0)
+mainButton.AnchorPoint = Vector2.new(0.5, 0)
+mainButton.Text = "Toggle ESP + Teleport"
+mainButton.BackgroundColor3 = Color3.fromRGB(50, 50, 200)
+mainButton.TextColor3 = Color3.new(1, 1, 1)
+mainButton.Draggable = true
+mainButton.Active = true
+mainButton.Visible = true
+mainButton.Parent = gui
 
--- Botón de TP
-local tpBoton = Instance.new("TextButton")
-tpBoton.Size = UDim2.new(0, 140, 0, 40)
-tpBoton.Position = UDim2.new(0.5, -70, 0.1, 45)
-tpBoton.AnchorPoint = Vector2.new(0.5, 0)
-tpBoton.Text = "TP a coordenadas"
-tpBoton.BackgroundColor3 = Color3.fromRGB(50, 50, 200)
-tpBoton.TextColor3 = Color3.new(1, 1, 1)
-tpBoton.Draggable = true
-tpBoton.Active = true
-tpBoton.Visible = true
-tpBoton.Parent = gui
+-- ESP state
+local espActive = false
+local originalColors = {}
 
--- Estado del coloreo
-local activo = false
-
--- Función para colorear objetos
-local function colorear()
+-- Function to recolor crystals
+local function updateESP()
     local raiz = workspace:FindFirstChild("Regenator")
     if not raiz then return end
     local contenedor = raiz:FindFirstChild("Regenartor")
@@ -46,8 +36,12 @@ local function colorear()
             if modell then
                 for _, obj in ipairs(modell:GetChildren()) do
                     if obj:IsA("BasePart") then
-                        local tieneTouch = obj:FindFirstChild("TouchInterest") ~= nil
-                        obj.Color = tieneTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                        if not originalColors[obj] then
+                            originalColors[obj] = obj.Color
+                        end
+                        local hasTouch = obj:FindFirstChild("TouchInterest") ~= nil
+                        obj.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                        obj.Material = Enum.Material.Neon
                     end
                 end
             end
@@ -55,45 +49,61 @@ local function colorear()
     end
 end
 
--- Toggle del botón de coloreo
-boton.MouseButton1Click:Connect(function()
-    activo = not activo
-    boton.Text = activo and "Colorear: ON" or "Colorear: OFF"
-    boton.BackgroundColor3 = activo and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)
+-- Function to reset colors
+local function resetColors()
+    for obj, color in pairs(originalColors) do
+        if obj and obj:IsA("BasePart") then
+            obj.Color = color
+            obj.Material = Enum.Material.Plastic
+        end
+    end
+    originalColors = {}
+end
 
-    if activo then
-        colorear()
+-- Loop to refresh ESP
+RunService.RenderStepped:Connect(function()
+    if espActive then
+        updateESP()
     end
 end)
 
--- Acción del botón de TP
-tpBoton.MouseButton1Click:Connect(function()
-    local char = player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
+-- Button action
+mainButton.MouseButton1Click:Connect(function()
+    espActive = not espActive
+    mainButton.Text = espActive and "ESP ON" or "ESP OFF"
+
+    if espActive then
+        updateESP()
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
+        end
+    else
+        resetColors()
     end
 end)
 
--- Ctrl para ocultar ambos botones
+-- Ctrl to hide/show button
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.LeftControl and not gameProcessed then
-        local visible = not boton.Visible
-        boton.Visible = visible
-        tpBoton.Visible = visible
+        mainButton.Visible = not mainButton.Visible
     end
 end)
 
--- Actualizar si los cristales se reinician
+-- Auto-refresh when crystals regenerate
 local raiz = workspace:WaitForChild("Regenator")
 local contenedor = raiz:WaitForChild("Regenartor")
 
 contenedor.ChildAdded:Connect(function()
-    if activo then
+    if espActive then
         task.wait(0.1)
-        colorear()
+        updateESP()
     end
 end)
 
 contenedor.ChildRemoved:Connect(function()
-    -- No hace falta limpiar, se recolorea cuando reaparecen
+    if espActive then
+        task.wait(0.1)
+        updateESP()
+    end
 end)

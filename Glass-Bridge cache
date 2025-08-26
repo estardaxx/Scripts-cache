@@ -1,72 +1,8 @@
-local player = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
 
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ScriptaxGUI"
-
--- Main container
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 220, 0, 140)
-mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-mainFrame.BackgroundTransparency = 0.2
-mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = gui
-
--- Rounded corners for main frame
-local frameCorner = Instance.new("UICorner")
-frameCorner.CornerRadius = UDim.new(0, 12)
-frameCorner.Parent = mainFrame
-
--- Title label
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0, 30)
-titleLabel.Position = UDim2.new(0, 0, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Scriptax"
-titleLabel.TextColor3 = Color3.new(1, 1, 1)
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextSize = 20
-titleLabel.Parent = mainFrame
-
--- ESP toggle button
-local espButton = Instance.new("TextButton")
-espButton.Size = UDim2.new(0.9, 0, 0, 40)
-espButton.Position = UDim2.new(0.05, 0, 0, 40)
-espButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-espButton.TextColor3 = Color3.new(1, 1, 1)
-espButton.Font = Enum.Font.Gotham
-espButton.TextSize = 16
-espButton.Text = "Toggle ESP"
-espButton.AutoButtonColor = false
-espButton.BorderSizePixel = 0
-espButton.Parent = mainFrame
-
-local espCorner = Instance.new("UICorner")
-espCorner.CornerRadius = UDim.new(0, 8)
-espCorner.Parent = espButton
-
--- Teleport button
-local teleportButton = Instance.new("TextButton")
-teleportButton.Size = UDim2.new(0.9, 0, 0, 40)
-teleportButton.Position = UDim2.new(0.05, 0, 0, 90)
-teleportButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-teleportButton.TextColor3 = Color3.new(1, 1, 1)
-teleportButton.Font = Enum.Font.Gotham
-teleportButton.TextSize = 16
-teleportButton.Text = "Teleport"
-teleportButton.AutoButtonColor = false
-teleportButton.BorderSizePixel = 0
-teleportButton.Parent = mainFrame
-
-local tpCorner = Instance.new("UICorner")
-tpCorner.CornerRadius = UDim.new(0, 8)
-tpCorner.Parent = teleportButton
-
--- ESP logic
 local espEnabled = false
 local originalColors = {}
 
@@ -111,37 +47,108 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-espButton.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    espButton.Text = espEnabled and "ESP ON" or "ESP OFF"
-    if espEnabled then
-        updateESP()
-    else
-        resetESP()
-    end
-end)
+local function createGUI()
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "ScriptaxGUI"
+    gui.ResetOnSpawn = false
+    gui.Parent = player:WaitForChild("PlayerGui")
 
-teleportButton.MouseButton1Click:Connect(function()
-    local character = player.Character
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        character:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
-    end
-end)
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 220, 0, 140)
+    mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    mainFrame.BackgroundTransparency = 0.2
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.Parent = gui
 
--- Auto-refresh ESP when crystals change
-local root = workspace:WaitForChild("Regenator")
-local container = root:WaitForChild("Regenartor")
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 12)
+    frameCorner.Parent = mainFrame
 
-container.ChildAdded:Connect(function()
-    if espEnabled then
-        task.wait(0.1)
-        updateESP()
-    end
-end)
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 0, 30)
+    titleLabel.Position = UDim2.new(0, 0, 0, 0)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "Scriptax"
+    titleLabel.TextColor3 = Color3.new(1, 1, 1)
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextSize = 20
+    titleLabel.Parent = mainFrame
 
-container.ChildRemoved:Connect(function()
-    if espEnabled then
-        task.wait(0.1)
-        updateESP()
-    end
+    local espButton = Instance.new("TextButton")
+    espButton.Size = UDim2.new(0.9, 0, 0, 40)
+    espButton.Position = UDim2.new(0.05, 0, 0, 40)
+    espButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    espButton.TextColor3 = Color3.new(1, 1, 1)
+    espButton.Font = Enum.Font.Gotham
+    espButton.TextSize = 16
+    espButton.Text = "Toggle ESP"
+    espButton.AutoButtonColor = false
+    espButton.BorderSizePixel = 0
+    espButton.Parent = mainFrame
+
+    local espCorner = Instance.new("UICorner")
+    espCorner.CornerRadius = UDim.new(0, 8)
+    espCorner.Parent = espButton
+
+    local teleportButton = Instance.new("TextButton")
+    teleportButton.Size = UDim2.new(0.9, 0, 0, 40)
+    teleportButton.Position = UDim2.new(0.05, 0, 0, 90)
+    teleportButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    teleportButton.TextColor3 = Color3.new(1, 1, 1)
+    teleportButton.Font = Enum.Font.Gotham
+    teleportButton.TextSize = 16
+    teleportButton.Text = "Teleport"
+    teleportButton.AutoButtonColor = false
+    teleportButton.BorderSizePixel = 0
+    teleportButton.Parent = mainFrame
+
+    local tpCorner = Instance.new("UICorner")
+    tpCorner.CornerRadius = UDim.new(0, 8)
+    tpCorner.Parent = teleportButton
+
+    espButton.MouseButton1Click:Connect(function()
+        espEnabled = not espEnabled
+        espButton.Text = espEnabled and "ESP ON" or "Toggle ESP"
+        if espEnabled then
+            updateESP()
+        else
+            resetESP()
+        end
+    end)
+
+    teleportButton.MouseButton1Click:Connect(function()
+        local character = player.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            character:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
+        end
+    end)
+
+    local root = workspace:WaitForChild("Regenator")
+    local container = root:WaitForChild("Regenartor")
+
+    container.ChildAdded:Connect(function()
+        if espEnabled then
+            task.wait(0.1)
+            updateESP()
+        end
+    end)
+
+    container.ChildRemoved:Connect(function()
+        if espEnabled then
+            task.wait(0.1)
+            updateESP()
+        end
+    end)
+end
+
+-- Ejecutar al inicio
+createGUI()
+
+-- Volver a crear GUI al reaparecer
+player.CharacterAdded:Connect(function()
+    wait(1)
+    createGUI()
 end)

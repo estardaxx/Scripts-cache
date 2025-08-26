@@ -4,13 +4,13 @@ local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "ESP_GUI"
 
--- Crear botón flotante
+-- Botón flotante
 local boton = Instance.new("TextButton")
 boton.Size = UDim2.new(0, 120, 0, 40)
 boton.Position = UDim2.new(0.5, -60, 0.1, 0)
 boton.AnchorPoint = Vector2.new(0.5, 0)
 boton.Text = "ESP: OFF"
-boton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+boton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
 boton.TextColor3 = Color3.new(0, 0, 0)
 boton.Draggable = true
 boton.Active = true
@@ -22,14 +22,13 @@ local espActivo = false
 local espFolder = Instance.new("Folder", workspace)
 espFolder.Name = "ESP_Boxes"
 
--- Función para crear ESP con color según TouchInterest
+-- Crear ESP verde si tiene TouchInterest
 local function crearESP(obj)
-    if obj:IsA("BasePart") then
-        local tieneTouch = obj:FindFirstChild("TouchInterest") ~= nil
+    if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
         local esp = Instance.new("BoxHandleAdornment")
         esp.Adornee = obj
         esp.Size = obj.Size
-        esp.Color3 = tieneTouch and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        esp.Color3 = Color3.fromRGB(0, 255, 0)
         esp.Transparency = 0.3
         esp.ZIndex = 10
         esp.AlwaysOnTop = true
@@ -37,8 +36,8 @@ local function crearESP(obj)
     end
 end
 
--- Función principal que recorre la jerarquía
-local function escanearCristales()
+-- Escanear objetos
+local function escanear()
     espFolder:ClearAllChildren()
     local raiz = workspace:FindFirstChild("Regenator")
     if not raiz then return end
@@ -57,18 +56,17 @@ local function escanearCristales()
     end
 end
 
--- Toggle del ESP
+-- Toggle ESP
 local function alternarESP()
     espActivo = not espActivo
     boton.Text = espActivo and "ESP: ON" or "ESP: OFF"
-    boton.BackgroundColor3 = espActivo and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
     espFolder:ClearAllChildren()
     if espActivo then
-        escanearCristales()
+        escanear()
     end
 end
 
--- Botón para alternar
+-- Botón
 boton.MouseButton1Click:Connect(alternarESP)
 
 -- Ctrl para ocultar el botón
@@ -78,19 +76,19 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Detectar reinicio de cristales
+-- Auto-reescanear si los cristales se reinician
 local raiz = workspace:WaitForChild("Regenator")
 local contenedor = raiz:WaitForChild("Regenartor")
+
+contenedor.ChildAdded:Connect(function()
+    if espActivo then
+        wait(0.1)
+        escanear()
+    end
+end)
 
 contenedor.ChildRemoved:Connect(function()
     if espActivo then
         espFolder:ClearAllChildren()
-    end
-end)
-
-contenedor.ChildAdded:Connect(function()
-    if espActivo then
-        wait(0.1) -- pequeño delay para que se cree el contenido
-        escanearCristales()
     end
 end)

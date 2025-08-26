@@ -84,11 +84,9 @@ local function createGUI()
     local espButton = Instance.new("TextButton")
     espButton.Size = UDim2.new(0.9, 0, 0, 40)
     espButton.Position = UDim2.new(0.05, 0, 0, 40)
-    espButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     espButton.TextColor3 = Color3.new(1, 1, 1)
     espButton.Font = Enum.Font.Gotham
     espButton.TextSize = 16
-    espButton.Text = "Toggle ESP"
     espButton.AutoButtonColor = false
     espButton.BorderSizePixel = 0
     espButton.Parent = mainFrame
@@ -113,9 +111,17 @@ local function createGUI()
     tpCorner.CornerRadius = UDim.new(0, 8)
     tpCorner.Parent = teleportButton
 
+    -- Sync ESP button state
+    local function syncESPButton()
+        espButton.Text = espEnabled and "ESP ON" or "Toggle ESP"
+        espButton.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(45, 45, 45)
+    end
+
+    syncESPButton()
+
     espButton.MouseButton1Click:Connect(function()
         espEnabled = not espEnabled
-        espButton.Text = espEnabled and "ESP ON" or "Toggle ESP"
+        syncESPButton()
         if espEnabled then
             updateESP()
         else
@@ -148,10 +154,8 @@ local function createGUI()
     end)
 end
 
--- Run at start
 createGUI()
 
--- Recreate GUI on respawn
 player.CharacterAdded:Connect(function()
     wait(1)
     createGUI()

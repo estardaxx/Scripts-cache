@@ -21,13 +21,14 @@ boton.Parent = gui
 local espFolder = Instance.new("Folder", workspace)
 espFolder.Name = "ESP_Boxes"
 
--- Función para crear ESP si tiene TouchInterest
+-- Función para crear ESP con color según TouchInterest
 local function crearESP(obj)
-    if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
+    if obj:IsA("BasePart") then
+        local tieneTouch = obj:FindFirstChild("TouchInterest") ~= nil
         local esp = Instance.new("BoxHandleAdornment")
         esp.Adornee = obj
         esp.Size = obj.Size
-        esp.Color3 = Color3.fromRGB(0, 255, 0)
+        esp.Color3 = tieneTouch and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
         esp.Transparency = 0.3
         esp.ZIndex = 10
         esp.AlwaysOnTop = true

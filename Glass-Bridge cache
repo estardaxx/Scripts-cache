@@ -5,29 +5,34 @@ local UserInputService = game:GetService("UserInputService")
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "ScriptaxGUI"
 
--- Main frame
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 140)
-frame.Position = UDim2.new(0.5, -110, 0.1, 0)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BackgroundTransparency = 0.2
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-frame.Parent = gui
+-- Main container
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 220, 0, 140)
+mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BackgroundTransparency = 0.2
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = gui
 
--- Title
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Position = UDim2.new(0, 0, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "Scriptax"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 20
-title.Parent = frame
+-- Rounded corners for main frame
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 12)
+frameCorner.Parent = mainFrame
 
--- ESP Button
+-- Title label
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 30)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Scriptax"
+titleLabel.TextColor3 = Color3.new(1, 1, 1)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 20
+titleLabel.Parent = mainFrame
+
+-- ESP toggle button
 local espButton = Instance.new("TextButton")
 espButton.Size = UDim2.new(0.9, 0, 0, 40)
 espButton.Position = UDim2.new(0.05, 0, 0, 40)
@@ -38,43 +43,51 @@ espButton.TextSize = 16
 espButton.Text = "Toggle ESP"
 espButton.AutoButtonColor = false
 espButton.BorderSizePixel = 0
-espButton.Parent = frame
+espButton.Parent = mainFrame
 
--- Teleport Button
-local tpButton = Instance.new("TextButton")
-tpButton.Size = UDim2.new(0.9, 0, 0, 40)
-tpButton.Position = UDim2.new(0.05, 0, 0, 90)
-tpButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-tpButton.TextColor3 = Color3.new(1, 1, 1)
-tpButton.Font = Enum.Font.Gotham
-tpButton.TextSize = 16
-tpButton.Text = "Teleport"
-tpButton.AutoButtonColor = false
-tpButton.BorderSizePixel = 0
-tpButton.Parent = frame
+local espCorner = Instance.new("UICorner")
+espCorner.CornerRadius = UDim.new(0, 8)
+espCorner.Parent = espButton
+
+-- Teleport button
+local teleportButton = Instance.new("TextButton")
+teleportButton.Size = UDim2.new(0.9, 0, 0, 40)
+teleportButton.Position = UDim2.new(0.05, 0, 0, 90)
+teleportButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+teleportButton.TextColor3 = Color3.new(1, 1, 1)
+teleportButton.Font = Enum.Font.Gotham
+teleportButton.TextSize = 16
+teleportButton.Text = "Teleport"
+teleportButton.AutoButtonColor = false
+teleportButton.BorderSizePixel = 0
+teleportButton.Parent = mainFrame
+
+local tpCorner = Instance.new("UICorner")
+tpCorner.CornerRadius = UDim.new(0, 8)
+tpCorner.Parent = teleportButton
 
 -- ESP logic
-local espActive = false
+local espEnabled = false
 local originalColors = {}
 
 local function updateESP()
-    local raiz = workspace:FindFirstChild("Regenator")
-    if not raiz then return end
-    local contenedor = raiz:FindFirstChild("Regenartor")
-    if not contenedor then return end
+    local root = workspace:FindFirstChild("Regenator")
+    if not root then return end
+    local container = root:FindFirstChild("Regenartor")
+    if not container then return end
 
-    for _, model in ipairs(contenedor:GetChildren()) do
+    for _, model in ipairs(container:GetChildren()) do
         if model:IsA("Model") then
-            local modell = model:FindFirstChild("modell")
-            if modell then
-                for _, obj in ipairs(modell:GetChildren()) do
-                    if obj:IsA("BasePart") then
-                        if not originalColors[obj] then
-                            originalColors[obj] = obj.Color
+            local innerModel = model:FindFirstChild("modell")
+            if innerModel then
+                for _, part in ipairs(innerModel:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        if not originalColors[part] then
+                            originalColors[part] = part.Color
                         end
-                        local hasTouch = obj:FindFirstChild("TouchInterest") ~= nil
-                        obj.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
-                        obj.Material = Enum.Material.Neon
+                        local hasTouch = part:FindFirstChild("TouchInterest") ~= nil
+                        part.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                        part.Material = Enum.Material.Neon
                     end
                 end
             end
@@ -82,52 +95,52 @@ local function updateESP()
     end
 end
 
-local function resetColors()
-    for obj, color in pairs(originalColors) do
-        if obj and obj:IsA("BasePart") then
-            obj.Color = color
-            obj.Material = Enum.Material.Plastic
+local function resetESP()
+    for part, color in pairs(originalColors) do
+        if part and part:IsA("BasePart") then
+            part.Color = color
+            part.Material = Enum.Material.Plastic
         end
     end
     originalColors = {}
 end
 
 RunService.RenderStepped:Connect(function()
-    if espActive then
+    if espEnabled then
         updateESP()
     end
 end)
 
 espButton.MouseButton1Click:Connect(function()
-    espActive = not espActive
-    espButton.Text = espActive and "ESP ON" or "ESP OFF"
-    if espActive then
+    espEnabled = not espEnabled
+    espButton.Text = espEnabled and "ESP ON" or "ESP OFF"
+    if espEnabled then
         updateESP()
     else
-        resetColors()
+        resetESP()
     end
 end)
 
-tpButton.MouseButton1Click:Connect(function()
-    local char = player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
+teleportButton.MouseButton1Click:Connect(function()
+    local character = player.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
     end
 end)
 
--- Auto-refresh when crystals change
-local raiz = workspace:WaitForChild("Regenator")
-local contenedor = raiz:WaitForChild("Regenartor")
+-- Auto-refresh ESP when crystals change
+local root = workspace:WaitForChild("Regenator")
+local container = root:WaitForChild("Regenartor")
 
-contenedor.ChildAdded:Connect(function()
-    if espActive then
+container.ChildAdded:Connect(function()
+    if espEnabled then
         task.wait(0.1)
         updateESP()
     end
 end)
 
-contenedor.ChildRemoved:Connect(function()
-    if espActive then
+container.ChildRemoved:Connect(function()
+    if espEnabled then
         task.wait(0.1)
         updateESP()
     end

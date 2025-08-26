@@ -1,0 +1,99 @@
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "ColorToggleGUI"
+
+-- Botón de coloreo
+local boton = Instance.new("TextButton")
+boton.Size = UDim2.new(0, 140, 0, 40)
+boton.Position = UDim2.new(0.5, -70, 0.1, 0)
+boton.AnchorPoint = Vector2.new(0.5, 0)
+boton.Text = "Colorear: OFF"
+boton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+boton.TextColor3 = Color3.new(1, 1, 1)
+boton.Draggable = true
+boton.Active = true
+boton.Visible = true
+boton.Parent = gui
+
+-- Botón de TP
+local tpBoton = Instance.new("TextButton")
+tpBoton.Size = UDim2.new(0, 140, 0, 40)
+tpBoton.Position = UDim2.new(0.5, -70, 0.1, 45)
+tpBoton.AnchorPoint = Vector2.new(0.5, 0)
+tpBoton.Text = "TP a coordenadas"
+tpBoton.BackgroundColor3 = Color3.fromRGB(50, 50, 200)
+tpBoton.TextColor3 = Color3.new(1, 1, 1)
+tpBoton.Draggable = true
+tpBoton.Active = true
+tpBoton.Visible = true
+tpBoton.Parent = gui
+
+-- Estado del coloreo
+local activo = false
+
+-- Función para colorear objetos
+local function colorear()
+    local raiz = workspace:FindFirstChild("Regenator")
+    if not raiz then return end
+    local contenedor = raiz:FindFirstChild("Regenartor")
+    if not contenedor then return end
+
+    for _, model in ipairs(contenedor:GetChildren()) do
+        if model:IsA("Model") then
+            local modell = model:FindFirstChild("modell")
+            if modell then
+                for _, obj in ipairs(modell:GetChildren()) do
+                    if obj:IsA("BasePart") then
+                        local tieneTouch = obj:FindFirstChild("TouchInterest") ~= nil
+                        obj.Color = tieneTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Toggle del botón de coloreo
+boton.MouseButton1Click:Connect(function()
+    activo = not activo
+    boton.Text = activo and "Colorear: ON" or "Colorear: OFF"
+    boton.BackgroundColor3 = activo and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)
+
+    if activo then
+        colorear()
+    end
+end)
+
+-- Acción del botón de TP
+tpBoton.MouseButton1Click:Connect(function()
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
+    end
+end)
+
+-- Ctrl para ocultar ambos botones
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.LeftControl and not gameProcessed then
+        local visible = not boton.Visible
+        boton.Visible = visible
+        tpBoton.Visible = visible
+    end
+end)
+
+-- Actualizar si los cristales se reinician
+local raiz = workspace:WaitForChild("Regenator")
+local contenedor = raiz:WaitForChild("Regenartor")
+
+contenedor.ChildAdded:Connect(function()
+    if activo then
+        task.wait(0.1)
+        colorear()
+    end
+end)
+
+contenedor.ChildRemoved:Connect(function()
+    -- No hace falta limpiar, se recolorea cuando reaparecen
+end)

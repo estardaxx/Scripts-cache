@@ -9,15 +9,16 @@ local boton = Instance.new("TextButton")
 boton.Size = UDim2.new(0, 120, 0, 40)
 boton.Position = UDim2.new(0.5, -60, 0.1, 0)
 boton.AnchorPoint = Vector2.new(0.5, 0)
-boton.Text = "Activar ESP"
-boton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+boton.Text = "ESP: OFF"
+boton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 boton.TextColor3 = Color3.new(0, 0, 0)
 boton.Draggable = true
 boton.Active = true
 boton.Visible = true
 boton.Parent = gui
 
--- Carpeta para los adornos
+-- Estado del ESP
+local espActivo = false
 local espFolder = Instance.new("Folder", workspace)
 espFolder.Name = "ESP_Boxes"
 
@@ -37,7 +38,7 @@ local function crearESP(obj)
 end
 
 -- Función principal que recorre la jerarquía
-local function activarESP()
+local function escanearCristales()
     espFolder:ClearAllChildren()
     local raiz = workspace:FindFirstChild("Regenator")
     if not raiz then return end
@@ -56,14 +57,40 @@ local function activarESP()
     end
 end
 
--- Toggle con el botón
-boton.MouseButton1Click:Connect(function()
-    activarESP()
-end)
+-- Toggle del ESP
+local function alternarESP()
+    espActivo = not espActivo
+    boton.Text = espActivo and "ESP: ON" or "ESP: OFF"
+    boton.BackgroundColor3 = espActivo and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+    espFolder:ClearAllChildren()
+    if espActivo then
+        escanearCristales()
+    end
+end
 
--- Toggle de visibilidad con Ctrl
+-- Botón para alternar
+boton.MouseButton1Click:Connect(alternarESP)
+
+-- Ctrl para ocultar el botón
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.KeyCode == Enum.KeyCode.LeftControl and not gameProcessed then
         boton.Visible = not boton.Visible
+    end
+end)
+
+-- Detectar reinicio de cristales
+local raiz = workspace:WaitForChild("Regenator")
+local contenedor = raiz:WaitForChild("Regenartor")
+
+contenedor.ChildRemoved:Connect(function()
+    if espActivo then
+        espFolder:ClearAllChildren()
+    end
+end)
+
+contenedor.ChildAdded:Connect(function()
+    if espActivo then
+        wait(0.1) -- pequeño delay para que se cree el contenido
+        escanearCristales()
     end
 end)

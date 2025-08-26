@@ -1,29 +1,62 @@
-local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
+local player = game:GetService("Players").LocalPlayer
 local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "CrystalESP_GUI"
+gui.Name = "ScriptaxGUI"
 
--- Create unified button
-local mainButton = Instance.new("TextButton")
-mainButton.Size = UDim2.new(0, 180, 0, 40)
-mainButton.Position = UDim2.new(0.5, -90, 0.1, 0)
-mainButton.AnchorPoint = Vector2.new(0.5, 0)
-mainButton.Text = "Toggle ESP + Teleport"
-mainButton.BackgroundColor3 = Color3.fromRGB(50, 50, 200)
-mainButton.TextColor3 = Color3.new(1, 1, 1)
-mainButton.Draggable = true
-mainButton.Active = true
-mainButton.Visible = true
-mainButton.Parent = gui
+-- Main frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 140)
+frame.Position = UDim2.new(0.5, -110, 0.1, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BackgroundTransparency = 0.2
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
 
--- ESP state
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Scriptax"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.Parent = frame
+
+-- ESP Button
+local espButton = Instance.new("TextButton")
+espButton.Size = UDim2.new(0.9, 0, 0, 40)
+espButton.Position = UDim2.new(0.05, 0, 0, 40)
+espButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+espButton.TextColor3 = Color3.new(1, 1, 1)
+espButton.Font = Enum.Font.Gotham
+espButton.TextSize = 16
+espButton.Text = "Toggle ESP"
+espButton.AutoButtonColor = false
+espButton.BorderSizePixel = 0
+espButton.Parent = frame
+
+-- Teleport Button
+local tpButton = Instance.new("TextButton")
+tpButton.Size = UDim2.new(0.9, 0, 0, 40)
+tpButton.Position = UDim2.new(0.05, 0, 0, 90)
+tpButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+tpButton.TextColor3 = Color3.new(1, 1, 1)
+tpButton.Font = Enum.Font.Gotham
+tpButton.TextSize = 16
+tpButton.Text = "Teleport"
+tpButton.AutoButtonColor = false
+tpButton.BorderSizePixel = 0
+tpButton.Parent = frame
+
+-- ESP logic
 local espActive = false
 local originalColors = {}
 
--- Function to recolor crystals
 local function updateESP()
     local raiz = workspace:FindFirstChild("Regenator")
     if not raiz then return end
@@ -49,7 +82,6 @@ local function updateESP()
     end
 end
 
--- Function to reset colors
 local function resetColors()
     for obj, color in pairs(originalColors) do
         if obj and obj:IsA("BasePart") then
@@ -60,37 +92,30 @@ local function resetColors()
     originalColors = {}
 end
 
--- Loop to refresh ESP
 RunService.RenderStepped:Connect(function()
     if espActive then
         updateESP()
     end
 end)
 
--- Button action
-mainButton.MouseButton1Click:Connect(function()
+espButton.MouseButton1Click:Connect(function()
     espActive = not espActive
-    mainButton.Text = espActive and "ESP ON" or "ESP OFF"
-
+    espButton.Text = espActive and "ESP ON" or "ESP OFF"
     if espActive then
         updateESP()
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
-        end
     else
         resetColors()
     end
 end)
 
--- Ctrl to hide/show button
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.LeftControl and not gameProcessed then
-        mainButton.Visible = not mainButton.Visible
+tpButton.MouseButton1Click:Connect(function()
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
     end
 end)
 
--- Auto-refresh when crystals regenerate
+-- Auto-refresh when crystals change
 local raiz = workspace:WaitForChild("Regenator")
 local contenedor = raiz:WaitForChild("Regenartor")
 

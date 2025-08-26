@@ -1,0 +1,68 @@
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "ESP_GUI"
+
+-- Crear botón flotante
+local boton = Instance.new("TextButton")
+boton.Size = UDim2.new(0, 120, 0, 40)
+boton.Position = UDim2.new(0.5, -60, 0.1, 0)
+boton.AnchorPoint = Vector2.new(0.5, 0)
+boton.Text = "Activar ESP"
+boton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+boton.TextColor3 = Color3.new(0, 0, 0)
+boton.Draggable = true
+boton.Active = true
+boton.Visible = true
+boton.Parent = gui
+
+-- Carpeta para los adornos
+local espFolder = Instance.new("Folder", workspace)
+espFolder.Name = "ESP_Boxes"
+
+-- Función para crear ESP si tiene TouchInterest
+local function crearESP(obj)
+    if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
+        local esp = Instance.new("BoxHandleAdornment")
+        esp.Adornee = obj
+        esp.Size = obj.Size
+        esp.Color3 = Color3.fromRGB(0, 255, 0)
+        esp.Transparency = 0.3
+        esp.ZIndex = 10
+        esp.AlwaysOnTop = true
+        esp.Parent = espFolder
+    end
+end
+
+-- Función principal que recorre la jerarquía
+local function activarESP()
+    espFolder:ClearAllChildren()
+    local raiz = workspace:FindFirstChild("Regenator")
+    if not raiz then return end
+    local contenedor = raiz:FindFirstChild("Regenartor")
+    if not contenedor then return end
+
+    for _, model in ipairs(contenedor:GetChildren()) do
+        if model:IsA("Model") then
+            local modell = model:FindFirstChild("modell")
+            if modell then
+                for _, obj in ipairs(modell:GetChildren()) do
+                    crearESP(obj)
+                end
+            end
+        end
+    end
+end
+
+-- Toggle con el botón
+boton.MouseButton1Click:Connect(function()
+    activarESP()
+end)
+
+-- Toggle de visibilidad con Ctrl
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.LeftControl and not gameProcessed then
+        boton.Visible = not boton.Visible
+    end
+end)

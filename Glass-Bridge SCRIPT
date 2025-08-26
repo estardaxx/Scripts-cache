@@ -2,43 +2,26 @@ local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ESP_GUI"
+gui.Name = "ColorToggleGUI"
 
 -- Botón flotante
 local boton = Instance.new("TextButton")
-boton.Size = UDim2.new(0, 120, 0, 40)
-boton.Position = UDim2.new(0.5, -60, 0.1, 0)
+boton.Size = UDim2.new(0, 140, 0, 40)
+boton.Position = UDim2.new(0.5, -70, 0.1, 0)
 boton.AnchorPoint = Vector2.new(0.5, 0)
-boton.Text = "ESP: OFF"
-boton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-boton.TextColor3 = Color3.new(0, 0, 0)
+boton.Text = "Colorear: OFF"
+boton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+boton.TextColor3 = Color3.new(1, 1, 1)
 boton.Draggable = true
 boton.Active = true
 boton.Visible = true
 boton.Parent = gui
 
--- Estado del ESP
-local espActivo = false
-local espFolder = Instance.new("Folder", workspace)
-espFolder.Name = "ESP_Boxes"
+-- Estado del coloreo
+local activo = false
 
--- Crear ESP verde si tiene TouchInterest
-local function crearESP(obj)
-    if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
-        local esp = Instance.new("BoxHandleAdornment")
-        esp.Adornee = obj
-        esp.Size = obj.Size
-        esp.Color3 = Color3.fromRGB(0, 255, 0)
-        esp.Transparency = 0.3
-        esp.ZIndex = 10
-        esp.AlwaysOnTop = true
-        esp.Parent = espFolder
-    end
-end
-
--- Escanear objetos
-local function escanear()
-    espFolder:ClearAllChildren()
+-- Función para colorear objetos
+local function colorear()
     local raiz = workspace:FindFirstChild("Regenator")
     if not raiz then return end
     local contenedor = raiz:FindFirstChild("Regenartor")
@@ -49,25 +32,26 @@ local function escanear()
             local modell = model:FindFirstChild("modell")
             if modell then
                 for _, obj in ipairs(modell:GetChildren()) do
-                    crearESP(obj)
+                    if obj:IsA("BasePart") then
+                        local tieneTouch = obj:FindFirstChild("TouchInterest") ~= nil
+                        obj.Color = tieneTouch and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+                    end
                 end
             end
         end
     end
 end
 
--- Toggle ESP
-local function alternarESP()
-    espActivo = not espActivo
-    boton.Text = espActivo and "ESP: ON" or "ESP: OFF"
-    espFolder:ClearAllChildren()
-    if espActivo then
-        escanear()
-    end
-end
+-- Toggle del botón
+boton.MouseButton1Click:Connect(function()
+    activo = not activo
+    boton.Text = activo and "Colorear: ON" or "Colorear: OFF"
+    boton.BackgroundColor3 = activo and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)
 
--- Botón
-boton.MouseButton1Click:Connect(alternarESP)
+    if activo then
+        colorear()
+    end
+end)
 
 -- Ctrl para ocultar el botón
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -76,19 +60,17 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Auto-reescanear si los cristales se reinician
+-- Actualizar si los cristales se reinician
 local raiz = workspace:WaitForChild("Regenator")
 local contenedor = raiz:WaitForChild("Regenartor")
 
 contenedor.ChildAdded:Connect(function()
-    if espActivo then
+    if activo then
         wait(0.1)
-        escanear()
+        colorear()
     end
 end)
 
 contenedor.ChildRemoved:Connect(function()
-    if espActivo then
-        espFolder:ClearAllChildren()
-    end
+    -- No hay que hacer nada, los objetos se van solos
 end)

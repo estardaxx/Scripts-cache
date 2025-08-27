@@ -7,7 +7,7 @@ local Window = Rayfield:CreateWindow({
     LoadingTitle = "Loading...",
     LoadingSubtitle = "Professional Script Menu",
     ShowText = "Open Menu",
-    Theme = "Midnight",            -- tema actual
+    Theme = "Serenity",            -- tema actualizado
     ToggleUIKeybind = Enum.KeyCode.RightShift,
     KeySystem = false,
     ConfigurationSaving = { Enabled = false }
@@ -165,7 +165,7 @@ TabTP:CreateButton({
 })
 TabTP:CreateSection("AutoFarm")
 TabTP:CreateToggle({
-    Name = "AutoFarm Teleport (0.75s)",
+    Name = "AutoFarm Teleport",
     CurrentValue = false,
     Callback = function(v)
         farmEnabled = v
@@ -195,10 +195,12 @@ TabKeys:CreateKeybind({
 })
 
 TabKeys:CreateKeybind({
-    Name = "Empty Keybind",
-    CurrentKeybind = "", -- vacío
+    Name = "Toggle Menu",
+    CurrentKeybind = "LeftControl",
     HoldToInteract = false,
-    Callback = function() end
+    Callback = function()
+        Window:ToggleUI()
+    end,
 })
 
 -- ================== CREDITS ==================

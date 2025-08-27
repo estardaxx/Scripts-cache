@@ -8,7 +8,7 @@ local Window = Rayfield:CreateWindow({
     LoadingSubtitle = "Professional Script Menu",
     ShowText = "Open Menu",
     Theme = "Serenity",            -- minimal, modern theme from Rayfield docs
-    ToggleUIKeybind = "RightShift",
+    ToggleUIKeybind = Enum.KeyCode.RightShift,
     KeySystem = false,
     ConfigurationSaving = { Enabled = false }
 })

@@ -27,7 +27,8 @@ local function createWindow()
     -- ================== SHARED VARS ==================
     local espEnabled = false
     local espLoop = nil
-    local originalProps = {}  -- [part] = {Color=..., Material=...}
+    local correctAllEnabled = false
+    local originalProps = {}  -- [part] = {Color=..., Material=..., CanCollide=...}
 
     local function getContainer()
         local root = workspace:FindFirstChild("Regenator")
@@ -45,10 +46,9 @@ local function createWindow()
                     for _, part in ipairs(inner:GetChildren()) do
                         if part:IsA("BasePart") then
                             if not originalProps[part] then
-                                originalProps[part] = { Color = part.Color, Material = part.Material }
+                                originalProps[part] = { Color = part.Color, Material = part.Material, CanCollide = part.CanCollide }
                             end
-                            local hasTouch = part:FindFirstChild("TouchInterest") ~= nil
-                            part.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                            part.Color = part.CanCollide and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
                             part.Material = Enum.Material.Neon
                         end
                     end
@@ -62,9 +62,14 @@ local function createWindow()
             if typeof(part) == "Instance" and part and part.Parent then
                 part.Color = props.Color
                 part.Material = props.Material
+                if not correctAllEnabled then
+                    part.CanCollide = props.CanCollide
+                end
             end
         end
-        originalProps = {}
+        if not correctAllEnabled then
+            originalProps = {}
+        end
     end
 
     local function startESPLoop()
@@ -81,6 +86,40 @@ local function createWindow()
         espEnabled = false
         resetESP()
         espLoop = nil
+    end
+
+    local function toggleCorrectAll(v)
+        correctAllEnabled = v
+        local container = getContainer()
+        if not container then return end
+        if v then
+            for _, model in ipairs(container:GetChildren()) do
+                if model:IsA("Model") then
+                    local inner = model:FindFirstChild("modell")
+                    if inner then
+                        for _, part in ipairs(inner:GetChildren()) do
+                            if part:IsA("BasePart") then
+                                if not originalProps[part] then
+                                    originalProps[part] = { Color = part.Color, Material = part.Material, CanCollide = part.CanCollide }
+                                end
+                                local touch = part:FindFirstChild("TouchInterest")
+                                if touch then touch:Destroy() end
+                                part.CanCollide = true
+                            end
+                        end
+                    end
+                end
+            end
+        else
+            for part, props in pairs(originalProps) do
+                if typeof(part) == "Instance" and part and part.Parent then
+                    part.CanCollide = props.CanCollide
+                end
+            end
+            if not espEnabled then
+                originalProps = {}
+            end
+        end
     end
 
     -- ========= MOVEMENT (persists on respawn) =========
@@ -250,6 +289,14 @@ local function createWindow()
             if v then startESPLoop() else stopESPLoop() end
         end,
     })
+    TabMain:CreateToggle({
+        Name = "Correct All",
+        CurrentValue = false,
+        Flag = "Correct_All",
+        Callback = function(v)
+            toggleCorrectAll(v)
+        end,
+    })
 
     TabMain:CreateSection("Timer")
     TabMain:CreateToggle({
@@ -330,7 +377,7 @@ local function createWindow()
         Flag = "Keybind_ESP",
         Callback = function()
             espEnabled = not espEnabled
-            if espEnabled then startESPLoop() else stopESPLoop() end
+            if v then startESPLoop() else stopESPLoop() end
         end,
     })
 

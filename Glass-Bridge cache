@@ -9,8 +9,13 @@ local Window = Rayfield:CreateWindow({
     ShowText = "Open Menu",
     Theme = "Serenity",
     KeySystem = false,
-    ConfigurationSaving = { Enabled = false }
+    ConfigurationSaving = { Enabled = true, FolderName = "ScriptaxConfig", FileName = "Settings" }
 })
+
+-- Try to set ToggleUIKeybind safely
+pcall(function()
+    Window.ToggleUIKeybind = Enum.KeyCode.RightShift
+end)
 
 -- ================== SHARED VARS ==================
 local Players = game:GetService("Players")
@@ -209,6 +214,7 @@ TabMain:CreateSection("ESP")
 TabMain:CreateToggle({
     Name = "ESP Glasses",
     CurrentValue = false,
+    Flag = "ESP_Glasses", -- For saving
     Callback = function(v)
         espEnabled = v
         if v then startESPLoop() else stopESPLoop() end
@@ -219,6 +225,7 @@ TabMain:CreateSection("Timer")
 TabMain:CreateToggle({
     Name = "Timer",
     CurrentValue = false,
+    Flag = "Timer", -- For saving
     Callback = function(v)
         toggleCounter(v)
     end,
@@ -230,6 +237,7 @@ TabMain:CreateSlider({
     Range = {16, 200},
     Increment = 1,
     CurrentValue = savedWalkSpeed,
+    Flag = "WalkSpeed", -- For saving
     Callback = function(val)
         savedWalkSpeed = val
         local char = LocalPlayer.Character
@@ -243,12 +251,27 @@ TabMain:CreateSlider({
     Range = {50, 300},
     Increment = 5,
     CurrentValue = savedJumpPower,
+    Flag = "JumpPower", -- For saving
     Callback = function(val)
         savedJumpPower = val
         local char = LocalPlayer.Character
         if char and char:FindFirstChild("Humanoid") then
             char.Humanoid.JumpPower = val
         end
+    end,
+})
+
+TabMain:CreateSection("Configuration")
+TabMain:CreateButton({
+    Name = "Save Settings",
+    Callback = function()
+        Rayfield:SaveConfiguration()
+    end,
+})
+TabMain:CreateButton({
+    Name = "Load Settings",
+    Callback = function()
+        Rayfield:LoadConfiguration()
     end,
 })
 
@@ -263,6 +286,7 @@ TabTP:CreateSection("AutoFarm")
 TabTP:CreateToggle({
     Name = "AutoFarm Teleport",
     CurrentValue = false,
+    Flag = "AutoFarm", -- For saving
     Callback = function(v)
         farmEnabled = v
         if v then startFarm() else stopFarm() end
@@ -277,6 +301,7 @@ TabKeys:CreateKeybind({
     Name = "Toggle ESP",
     CurrentKeybind = "", -- vacío
     HoldToInteract = false,
+    Flag = "Keybind_ESP", -- For saving
     Callback = function()
         espEnabled = not espEnabled
         if espEnabled then startESPLoop() else stopESPLoop() end
@@ -287,11 +312,12 @@ TabKeys:CreateKeybind({
     Name = "Quick Teleport",
     CurrentKeybind = "", -- vacío
     HoldToInteract = false,
+    Flag = "Keybind_Teleport", -- For saving
     Callback = doTeleport
 })
 
 -- Label informativo sobre la tecla para abrir/cerrar el menú
-TabKeys:CreateLabel("Press default Rayfield key to open/close the menu")
+TabKeys:CreateLabel("Press RightShift to open/close the menu")
 
 -- ================== CREDITS ==================
 local TabCredits = Window:CreateTab("Credits", "award")

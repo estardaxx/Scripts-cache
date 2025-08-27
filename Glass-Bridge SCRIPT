@@ -29,6 +29,8 @@ local function createWindow()
     local espLoop = nil
     local correctAllEnabled = false
     local originalProps = {}  -- [part] = {Color=..., Material=..., CanCollide=...}
+    local EspToggle = nil -- Reference to ESP toggle
+    local CorrectAllToggle = nil -- Reference to Correct All toggle
 
     local function getContainer()
         local root = workspace:FindFirstChild("Regenator")
@@ -67,7 +69,7 @@ local function createWindow()
                 end
             end
         end
-        if not correctAllEnabled then
+        if not espEnabled and not correctAllEnabled then
             originalProps = {}
         end
     end
@@ -77,7 +79,7 @@ local function createWindow()
         espLoop = task.spawn(function()
             while espEnabled do
                 applyESPOnce()
-                task.wait(2)
+                task.wait(0.1) -- More instant update
             end
         end)
     end
@@ -280,7 +282,7 @@ local function createWindow()
     -- =================== TAB: MAIN ===================
     local TabMain = Window:CreateTab("Main", "layers")
     TabMain:CreateSection("ESP")
-    TabMain:CreateToggle({
+    EspToggle = TabMain:CreateToggle({
         Name = "ESP Glasses",
         CurrentValue = false,
         Flag = "ESP_Glasses",
@@ -289,7 +291,7 @@ local function createWindow()
             if v then startESPLoop() else stopESPLoop() end
         end,
     })
-    TabMain:CreateToggle({
+    CorrectAllToggle = TabMain:CreateToggle({
         Name = "Correct All",
         CurrentValue = false,
         Flag = "Correct_All",
@@ -377,7 +379,20 @@ local function createWindow()
         Flag = "Keybind_ESP",
         Callback = function()
             espEnabled = not espEnabled
-            if v then startESPLoop() else stopESPLoop() end
+            if EspToggle then EspToggle:Set(espEnabled) end
+            if espEnabled then startESPLoop() else stopESPLoop() end
+        end,
+    })
+
+    TabKeys:CreateKeybind({
+        Name = "Toggle Correct All",
+        CurrentKeybind = "",
+        HoldToInteract = false,
+        Flag = "Keybind_CorrectAll",
+        Callback = function()
+            correctAllEnabled = not correctAllEnabled
+            if CorrectAllToggle then CorrectAllToggle:Set(correctAllEnabled) end
+            toggleCorrectAll(correctAllEnabled)
         end,
     })
 

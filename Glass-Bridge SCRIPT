@@ -3,7 +3,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Crear ventana principal
 local Window = Rayfield:CreateWindow({
-    Name = "Crystal ESP Menu",
+    Name = "Crystal ESP Menu | Scriptax",
     LoadingTitle = "Loading...",
     LoadingSubtitle = "Created by Estardax",
     ConfigurationSaving = {

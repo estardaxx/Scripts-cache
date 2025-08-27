@@ -1,24 +1,44 @@
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- ================= WINDOW ================
+local Window = Rayfield:CreateWindow({
+    Name = "Crystal ESP Menu | Scriptax",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "Professional Script Menu",
+    ShowText = "Open Menu",
+    Theme = "Serenity",            -- tema actualizado
+    ToggleUIKeybind = Enum.KeyCode.RightShift,
+    KeySystem = false,
+    ConfigurationSaving = { Enabled = false }
+})
+
+-- ================== SHARED VARS ==================
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
 
+-- ===== ESP: stores originals so we can restore =====
 local espEnabled = false
-local originalColors = {}
+local espLoop    = nil
+local originalProps = {}  -- [part] = {Color=..., Material=...}
 
-local function updateESP()
+local function getContainer()
     local root = workspace:FindFirstChild("Regenator")
-    if not root then return end
-    local container = root:FindFirstChild("Regenartor")
-    if not container then return end
+    if not root then return nil end
+    return root:FindFirstChild("Regenartor")
+end
 
+local function applyESPOnce()
+    local container = getContainer()
+    if not container then return end
     for _, model in ipairs(container:GetChildren()) do
         if model:IsA("Model") then
-            local innerModel = model:FindFirstChild("modell")
-            if innerModel then
-                for _, part in ipairs(innerModel:GetChildren()) do
+            local inner = model:FindFirstChild("modell")
+            if inner then
+                for _, part in ipairs(inner:GetChildren()) do
                     if part:IsA("BasePart") then
-                        if not originalColors[part] then
-                            originalColors[part] = part.Color
+                        if not originalProps[part] then
+                            originalProps[part] = { Color = part.Color, Material = part.Material }
                         end
                         local hasTouch = part:FindFirstChild("TouchInterest") ~= nil
                         part.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
@@ -31,132 +51,185 @@ local function updateESP()
 end
 
 local function resetESP()
-    for part, color in pairs(originalColors) do
-        if part and part:IsA("BasePart") then
-            part.Color = color
-            part.Material = Enum.Material.Plastic
+    for part, props in pairs(originalProps) do
+        if typeof(part) == "Instance" and part and part.Parent then
+            part.Color = props.Color
+            part.Material = props.Material
         end
     end
-    originalColors = {}
+    originalProps = {}
 end
 
-RunService.RenderStepped:Connect(function()
-    if espEnabled then
-        updateESP()
+local function startESPLoop()
+    if espLoop then return end
+    espLoop = task.spawn(function()
+        while espEnabled do
+            applyESPOnce()
+            task.wait(2)
+        end
+    end)
+end
+
+local function stopESPLoop()
+    espEnabled = false
+    resetESP()
+    espLoop = nil
+end
+
+-- ========= MOVEMENT (persists on respawn) =========
+local savedWalkSpeed = 16
+local savedJumpPower = 50
+
+local function applyMovementTo(char)
+    local hum = char:WaitForChild("Humanoid")
+    hum.WalkSpeed = savedWalkSpeed
+    hum.JumpPower = savedJumpPower
+end
+
+LocalPlayer.CharacterAdded:Connect(applyMovementTo)
+if LocalPlayer.Character then
+    task.spawn(function() applyMovementTo(LocalPlayer.Character) end)
+end
+
+-- ========= TELEPORT / AUTOFARM =========
+local teleportPosition = Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875)
+
+local function doTeleport()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then char:MoveTo(teleportPosition) end
+end
+
+local farmEnabled = false
+local farmLoop = nil
+local function startFarm()
+    if farmLoop then return end
+    farmLoop = task.spawn(function()
+        while farmEnabled do
+            doTeleport()
+            task.wait(0.75)
+        end
+    end)
+end
+local function stopFarm()
+    farmEnabled = false
+    farmLoop = nil
+end
+
+-- ========= COUNTER GUI =========
+local counterEnabled = false
+local CounterLabel = nil
+local contador = game.Workspace["Glass bridge"].Timer.SurfaceGui.ClockTimer
+
+local function toggleCounter(v)
+    counterEnabled = v
+    if v then
+        CounterLabel = TabMain:CreateLabel("Timer: " .. contador.Text)
+        contador:GetPropertyChangedSignal("Text"):Connect(function()
+            if counterEnabled then
+                CounterLabel:Set("Timer: " .. contador.Text)
+            end
+        end)
+    else
+        if CounterLabel then
+            CounterLabel:Destroy()
+            CounterLabel = nil
+        end
     end
-end)
+end
 
-local function createGUI()
-    local existing = player:FindFirstChild("PlayerGui"):FindFirstChild("ScriptaxGUI")
-    if existing then
-        existing:Destroy()
-    end
+-- =================== TAB: MAIN ===================
+local TabMain = Window:CreateTab("Main", "layers")
+TabMain:CreateSection("ESP")
+TabMain:CreateToggle({
+    Name = "ESP Glasses",
+    CurrentValue = false,
+    Callback = function(v)
+        espEnabled = v
+        if v then startESPLoop() else stopESPLoop() end
+    end,
+})
 
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "ScriptaxGUI"
-    gui.ResetOnSpawn = false
-    gui.Parent = player:WaitForChild("PlayerGui")
+TabMain:CreateSection("Timer")
+TabMain:CreateToggle({
+    Name = "Timer",
+    CurrentValue = false,
+    Callback = function(v)
+        toggleCounter(v)
+    end,
+})
 
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 220, 0, 140)
-    mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    mainFrame.BackgroundTransparency = 0.2
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Active = true
-    mainFrame.Draggable = true
-    mainFrame.Parent = gui
+TabMain:CreateSection("Movement")
+TabMain:CreateSlider({
+    Name = "WalkSpeed",
+    Range = {16, 200},
+    Increment = 1,
+    CurrentValue = savedWalkSpeed,
+    Callback = function(val)
+        savedWalkSpeed = val
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.WalkSpeed = val
+        end
+    end,
+})
+TabMain:CreateSlider({
+    Name = "JumpPower",
+    Range = {50, 300},
+    Increment = 5,
+    CurrentValue = savedJumpPower,
+    Callback = function(val)
+        savedJumpPower = val
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.JumpPower = val
+        end
+    end,
+})
 
-    local frameCorner = Instance.new("UICorner")
-    frameCorner.CornerRadius = UDim.new(0, 12)
-    frameCorner.Parent = mainFrame
+-- ================= TAB: TELEPORTS =================
+local TabTP = Window:CreateTab("Teleports", "map-pin")
+TabTP:CreateSection("Positions")
+TabTP:CreateButton({
+    Name = "Teleport to Final",
+    Callback = doTeleport
+})
+TabTP:CreateSection("AutoFarm")
+TabTP:CreateToggle({
+    Name = "AutoFarm Teleport",
+    CurrentValue = false,
+    Callback = function(v)
+        farmEnabled = v
+        if v then startFarm() else stopFarm() end
+    end,
+})
 
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, 0, 0, 30)
-    titleLabel.Position = UDim2.new(0, 0, 0, 0)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "Scriptax"
-    titleLabel.TextColor3 = Color3.new(1, 1, 1)
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = 20
-    titleLabel.Parent = mainFrame
+-- ================= TAB: KEYBINDS =================
+local TabKeys = Window:CreateTab("Keybinds", "keyboard")
+TabKeys:CreateSection("Custom Keybinds")
 
-    local espButton = Instance.new("TextButton")
-    espButton.Size = UDim2.new(0.9, 0, 0, 40)
-    espButton.Position = UDim2.new(0.05, 0, 0, 40)
-    espButton.TextColor3 = Color3.new(1, 1, 1)
-    espButton.Font = Enum.Font.Gotham
-    espButton.TextSize = 16
-    espButton.AutoButtonColor = false
-    espButton.BorderSizePixel = 0
-    espButton.Parent = mainFrame
-
-    local espCorner = Instance.new("UICorner")
-    espCorner.CornerRadius = UDim.new(0, 8)
-    espCorner.Parent = espButton
-
-    local teleportButton = Instance.new("TextButton")
-    teleportButton.Size = UDim2.new(0.9, 0, 0, 40)
-    teleportButton.Position = UDim2.new(0.05, 0, 0, 90)
-    teleportButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    teleportButton.TextColor3 = Color3.new(1, 1, 1)
-    teleportButton.Font = Enum.Font.Gotham
-    teleportButton.TextSize = 16
-    teleportButton.Text = "Teleport"
-    teleportButton.AutoButtonColor = false
-    teleportButton.BorderSizePixel = 0
-    teleportButton.Parent = mainFrame
-
-    local tpCorner = Instance.new("UICorner")
-    tpCorner.CornerRadius = UDim.new(0, 8)
-    tpCorner.Parent = teleportButton
-
-    -- Sync ESP button state
-    local function syncESPButton()
-        espButton.Text = espEnabled and "ESP ON" or "Toggle ESP"
-        espButton.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(45, 45, 45)
-    end
-
-    syncESPButton()
-
-    espButton.MouseButton1Click:Connect(function()
+TabKeys:CreateKeybind({
+    Name = "Toggle ESP",
+    CurrentKeybind = "", -- vacío
+    HoldToInteract = false,
+    Callback = function()
         espEnabled = not espEnabled
-        syncESPButton()
-        if espEnabled then
-            updateESP()
-        else
-            resetESP()
-        end
-    end)
+        if espEnabled then startESPLoop() else stopESPLoop() end
+    end,
+})
 
-    teleportButton.MouseButton1Click:Connect(function()
-        local character = player.Character
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            character:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
-        end
-    end)
+TabKeys:CreateKeybind({
+    Name = "Quick Teleport",
+    CurrentKeybind = "", -- vacío
+    HoldToInteract = false,
+    Callback = doTeleport
+})
 
-    local root = workspace:WaitForChild("Regenator")
-    local container = root:WaitForChild("Regenartor")
+-- Label informativo sobre la tecla para abrir/cerrar el menú
+TabKeys:CreateLabel("Press RightShift to open/close the menu")
 
-    container.ChildAdded:Connect(function()
-        if espEnabled then
-            task.wait(0.1)
-            updateESP()
-        end
-    end)
-
-    container.ChildRemoved:Connect(function()
-        if espEnabled then
-            task.wait(0.1)
-            updateESP()
-        end
-    end)
-end
-
-createGUI()
-
-player.CharacterAdded:Connect(function()
-    wait(1)
-    createGUI()
-end)
+-- ================== CREDITS ==================
+local TabCredits = Window:CreateTab("Credits", "award")
+TabCredits:CreateSection("Script Information")
+TabCredits:CreateLabel("Crystal ESP Menu | Made by Estardax ⚡")
+TabCredits:CreateLabel("UI powered by Rayfield Library")

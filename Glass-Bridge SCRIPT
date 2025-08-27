@@ -194,15 +194,6 @@ TabKeys:CreateKeybind({
     Callback = doTeleport
 })
 
-TabKeys:CreateKeybind({
-    Name = "Toggle Menu",
-    CurrentKeybind = "LeftControl",
-    HoldToInteract = false,
-    Callback = function()
-        Window:ToggleUI()
-    end,
-})
-
 -- ================== CREDITS ==================
 local TabCredits = Window:CreateTab("Credits", "award")
 TabCredits:CreateSection("Script Information")

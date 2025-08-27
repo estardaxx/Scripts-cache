@@ -1,43 +1,46 @@
--- Load Rayfield
+-- Load Rayfield (official)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Main Window
+-- ================= WINDOW =================
 local Window = Rayfield:CreateWindow({
     Name = "Crystal ESP Menu | Scriptax",
     LoadingTitle = "Loading...",
     LoadingSubtitle = "Professional Script Menu",
-    ConfigurationSaving = {
-        Enabled = false,
-    },
+    ShowText = "Open Menu",
+    Theme = "Serenity",            -- minimal, modern theme from Rayfield docs
+    ToggleUIKeybind = "RightShift",
     KeySystem = false,
-    Theme = {
-        Background = Color3.fromRGB(16, 21, 35), -- custom dark color
-        TabBackground = Color3.fromRGB(20, 25, 40),
-        Border = Color3.fromRGB(35, 40, 60),
-        TextColor = Color3.fromRGB(255, 255, 255)
-    }
+    ConfigurationSaving = { Enabled = false }
 })
 
--- ========== ESP TAB ==========
-local TabESP = Window:CreateTab("ESP", 4483362458)
-TabESP:CreateSection("Crystal ESP")
+-- ================== SHARED VARS ==================
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
+-- ===== ESP: stores originals so we can restore =====
 local espEnabled = false
-local espLoop = nil
+local espLoop    = nil
+local originalProps = {}  -- [part] = {Color=..., Material=...}
 
-local function ApplyESP()
+local function getContainer()
     local root = workspace:FindFirstChild("Regenator")
-    if not root then return end
+    if not root then return nil end
+    return root:FindFirstChild("Regenartor")
+end
 
-    local container = root:FindFirstChild("Regenartor")
+local function applyESPOnce()
+    local container = getContainer()
     if not container then return end
-
     for _, model in ipairs(container:GetChildren()) do
         if model:IsA("Model") then
-            local innerModel = model:FindFirstChild("modell")
-            if innerModel then
-                for _, part in ipairs(innerModel:GetChildren()) do
+            local inner = model:FindFirstChild("modell")
+            if inner then
+                for _, part in ipairs(inner:GetChildren()) do
                     if part:IsA("BasePart") then
+                        -- save original only once
+                        if not originalProps[part] then
+                            originalProps[part] = { Color = part.Color, Material = part.Material }
+                        end
                         local hasTouch = part:FindFirstChild("TouchInterest") ~= nil
                         part.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
                         part.Material = Enum.Material.Neon
@@ -48,187 +51,151 @@ local function ApplyESP()
     end
 end
 
-local function ResetESP()
-    local root = workspace:FindFirstChild("Regenator")
-    if not root then return end
-
-    local container = root:FindFirstChild("Regenartor")
-    if not container then return end
-
-    for _, model in ipairs(container:GetChildren()) do
-        if model:IsA("Model") then
-            local innerModel = model:FindFirstChild("modell")
-            if innerModel then
-                for _, part in ipairs(innerModel:GetChildren()) do
-                    if part:IsA("BasePart") then
-                        part.Color = Color3.fromRGB(255, 255, 255)
-                        part.Material = Enum.Material.Plastic
-                    end
-                end
-            end
+local function resetESP()
+    for part, props in pairs(originalProps) do
+        if typeof(part) == "Instance" and part and part.Parent then
+            part.Color = props.Color
+            part.Material = props.Material
         end
     end
+    originalProps = {} -- clear map
 end
 
-local function StartESPLoop()
+local function startESPLoop()
     if espLoop then return end
     espLoop = task.spawn(function()
         while espEnabled do
-            ApplyESP()
-            task.wait(2)
+            applyESPOnce()
+            task.wait(2) -- re-apply periodically so it survives regen
         end
     end)
 end
 
-local function StopESPLoop()
+local function stopESPLoop()
     espEnabled = false
+    resetESP()
     espLoop = nil
-    ResetESP()
 end
 
-TabESP:CreateToggle({
-    Name = "ESP Glasses",
-    CurrentValue = false,
-    Callback = function(Value)
-        espEnabled = Value
-        if espEnabled then
-            StartESPLoop()
-        else
-            StopESPLoop()
-        end
-    end,
-})
-
--- ========== TELEPORT TAB ==========
-local TabTP = Window:CreateTab("Teleports", 4483362458)
-TabTP:CreateSection("Teleport Functions")
-
-local teleportPosition = Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875)
-
-TabTP:CreateButton({
-    Name = "Teleport to Secret Spot",
-    Callback = function()
-        local player = game:GetService("Players").LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        if character:FindFirstChild("HumanoidRootPart") then
-            character:MoveTo(teleportPosition)
-        end
-    end,
-})
-
--- ========== MOVEMENT TAB ==========
-local TabMovement = Window:CreateTab("Movement", 4483362458)
-TabMovement:CreateSection("Character Modifiers")
-
+-- ========= MOVEMENT (persists on respawn) =========
 local savedWalkSpeed = 16
 local savedJumpPower = 50
 
-TabMovement:CreateSlider({
-    Name = "WalkSpeed",
-    Range = {16, 200},
-    Increment = 1,
-    CurrentValue = savedWalkSpeed,
-    Callback = function(Value)
-        savedWalkSpeed = Value
-        local player = game:GetService("Players").LocalPlayer
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.WalkSpeed = Value
-        end
-    end,
-})
+local function applyMovementTo(char)
+    local hum = char:WaitForChild("Humanoid")
+    hum.WalkSpeed = savedWalkSpeed
+    hum.JumpPower = savedJumpPower
+end
 
-TabMovement:CreateSlider({
-    Name = "JumpPower",
-    Range = {50, 300},
-    Increment = 5,
-    CurrentValue = savedJumpPower,
-    Callback = function(Value)
-        savedJumpPower = Value
-        local player = game:GetService("Players").LocalPlayer
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.JumpPower = Value
-        end
-    end,
-})
+LocalPlayer.CharacterAdded:Connect(applyMovementTo)
+if LocalPlayer.Character then
+    task.spawn(function() applyMovementTo(LocalPlayer.Character) end)
+end
 
-game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid").WalkSpeed = savedWalkSpeed
-    char:WaitForChild("Humanoid").JumpPower = savedJumpPower
-end)
+-- ========= TELEPORT / AUTOFARM =========
+local teleportPosition = Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875)
 
--- ========== AUTOFARM TAB ==========
-local TabFarm = Window:CreateTab("AutoFarm", 4483362458)
-TabFarm:CreateSection("Automation")
+local function doTeleport()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then char:MoveTo(teleportPosition) end
+end
 
 local farmEnabled = false
 local farmLoop = nil
-
-local function StartFarmLoop()
+local function startFarm()
     if farmLoop then return end
     farmLoop = task.spawn(function()
         while farmEnabled do
-            local player = game:GetService("Players").LocalPlayer
-            local character = player.Character or player.CharacterAdded:Wait()
-            if character:FindFirstChild("HumanoidRootPart") then
-                character:MoveTo(teleportPosition)
-            end
-            task.wait(3) -- teleport every 3 seconds
+            doTeleport()
+            task.wait(0.75) -- 4x faster than 3s
         end
     end)
 end
-
-local function StopFarmLoop()
+local function stopFarm()
     farmEnabled = false
     farmLoop = nil
 end
 
-TabFarm:CreateToggle({
-    Name = "AutoFarm Teleport",
+-- =================== TAB: MAIN ===================
+local TabMain = Window:CreateTab("Main", "layers") -- lucide icon
+
+TabMain:CreateSection("ESP")
+TabMain:CreateToggle({
+    Name = "ESP Glasses",
     CurrentValue = false,
-    Callback = function(Value)
-        farmEnabled = Value
-        if farmEnabled then
-            StartFarmLoop()
-        else
-            StopFarmLoop()
+    Callback = function(v)
+        espEnabled = v
+        if v then startESPLoop() else stopESPLoop() end
+    end,
+})
+
+TabMain:CreateSection("Movement")
+TabMain:CreateSlider({
+    Name = "WalkSpeed",
+    Range = {16, 200},
+    Increment = 1,
+    CurrentValue = savedWalkSpeed,
+    Callback = function(val)
+        savedWalkSpeed = val
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.WalkSpeed = val
+        end
+    end,
+})
+TabMain:CreateSlider({
+    Name = "JumpPower",
+    Range = {50, 300},
+    Increment = 5,
+    CurrentValue = savedJumpPower,
+    Callback = function(val)
+        savedJumpPower = val
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.JumpPower = val
         end
     end,
 })
 
--- ========== KEYBINDS TAB ==========
-local TabKeys = Window:CreateTab("Keybinds", 4483362458)
-TabKeys:CreateSection("Custom Keybinds")
-
-TabKeys:CreateKeybind({
-    Name = "Toggle ESP Key",
+TabMain:CreateSection("Keybinds")
+TabMain:CreateKeybind({
+    Name = "Toggle ESP",
     CurrentKeybind = "E",
     HoldToInteract = false,
     Callback = function()
         espEnabled = not espEnabled
-        if espEnabled then
-            StartESPLoop()
-        else
-            StopESPLoop()
-        end
+        if espEnabled then startESPLoop() else stopESPLoop() end
     end,
 })
-
-TabKeys:CreateKeybind({
-    Name = "Teleport Key",
+TabMain:CreateKeybind({
+    Name = "Quick Teleport",
     CurrentKeybind = "T",
     HoldToInteract = false,
-    Callback = function()
-        local player = game:GetService("Players").LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        if character:FindFirstChild("HumanoidRootPart") then
-            character:MoveTo(teleportPosition)
-        end
+    Callback = doTeleport
+})
+
+-- ================= TAB: TELEPORTS =================
+local TabTP = Window:CreateTab("Teleports", "map-pin")
+TabTP:CreateSection("Positions")
+
+TabTP:CreateButton({
+    Name = "Teleport to Final",
+    Callback = doTeleport
+})
+
+TabTP:CreateSection("AutoFarm")
+TabTP:CreateToggle({
+    Name = "AutoFarm Teleport (0.75s)",
+    CurrentValue = false,
+    Callback = function(v)
+        farmEnabled = v
+        if v then startFarm() else stopFarm() end
     end,
 })
 
--- ========== CREDITS TAB ==========
-local TabCredits = Window:CreateTab("Credits", 4483362458)
+-- ================== CREDITS ==================
+local TabCredits = Window:CreateTab("Credits", "award")
 TabCredits:CreateSection("Script Information")
-TabCredits:CreateLabel("Crystal ESP Menu | Made by Scriptax ⚡")
+TabCredits:CreateLabel("Crystal ESP Menu | Made by Estardax ⚡")
 TabCredits:CreateLabel("UI powered by Rayfield Library")
-TabCredits:CreateLabel("Special thanks to Scriptax Community")

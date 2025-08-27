@@ -7,8 +7,7 @@ local Window = Rayfield:CreateWindow({
     LoadingTitle = "Loading...",
     LoadingSubtitle = "Professional Script Menu",
     ShowText = "Open Menu",
-    Theme = "Serenity",            -- tema actualizado
-    ToggleUIKeybind = Enum.KeyCode.RightShift,
+    Theme = "Serenity",
     KeySystem = false,
     ConfigurationSaving = { Enabled = false }
 })
@@ -118,21 +117,87 @@ end
 
 -- ========= COUNTER GUI =========
 local counterEnabled = false
+local CounterGui = nil
 local CounterLabel = nil
 local contador = game.Workspace["Glass bridge"].Timer.SurfaceGui.ClockTimer
+
+local function makeDraggable(frame)
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    frame.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+end
 
 local function toggleCounter(v)
     counterEnabled = v
     if v then
-        CounterLabel = TabMain:CreateLabel("Timer: " .. contador.Text)
+        -- Create ScreenGui
+        CounterGui = Instance.new("ScreenGui")
+        CounterGui.Parent = game.Players.LocalPlayer.PlayerGui
+        CounterGui.Name = "TimerGui"
+        CounterGui.ResetOnSpawn = false
+
+        -- Create Frame (background)
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 100, 0, 30)
+        frame.Position = UDim2.new(0.5, -50, 0, 10) -- Top center
+        frame.BackgroundColor3 = Color3.new(1, 1, 1) -- White
+        frame.BorderSizePixel = 0
+        frame.Parent = CounterGui
+
+        -- Create TextLabel
+        CounterLabel = Instance.new("TextLabel")
+        CounterLabel.Size = UDim2.new(1, 0, 1, 0)
+        CounterLabel.BackgroundTransparency = 1
+        CounterLabel.Text = contador.Text
+        CounterLabel.TextColor3 = Color3.new(0, 0, 0) -- Black
+        CounterLabel.TextScaled = true
+        CounterLabel.Font = Enum.Font.SourceSansBold
+        CounterLabel.Parent = frame
+
+        -- Make it draggable
+        makeDraggable(frame)
+
+        -- Update label when contador changes
         contador:GetPropertyChangedSignal("Text"):Connect(function()
-            if counterEnabled then
-                CounterLabel:Set("Timer: " .. contador.Text)
+            if counterEnabled and CounterLabel then
+                CounterLabel.Text = contador.Text
             end
         end)
     else
-        if CounterLabel then
-            CounterLabel:Destroy()
+        if CounterGui then
+            CounterGui:Destroy()
+            CounterGui = nil
             CounterLabel = nil
         end
     end
@@ -226,7 +291,7 @@ TabKeys:CreateKeybind({
 })
 
 -- Label informativo sobre la tecla para abrir/cerrar el menú
-TabKeys:CreateLabel("Press RightShift to open/close the menu")
+TabKeys:CreateLabel("Press default Rayfield key to open/close the menu")
 
 -- ================== CREDITS ==================
 local TabCredits = Window:CreateTab("Credits", "award")

@@ -194,6 +194,9 @@ TabKeys:CreateKeybind({
     Callback = doTeleport
 })
 
+-- Label informativo sobre la tecla para abrir/cerrar el menú
+TabKeys:CreateLabel("Press RightShift to open/close the menu")
+
 -- ================== CREDITS ==================
 local TabCredits = Window:CreateTab("Credits", "award")
 TabCredits:CreateSection("Script Information")

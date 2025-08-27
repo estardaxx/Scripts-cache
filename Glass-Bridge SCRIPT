@@ -1,162 +1,83 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
+-- Cargar Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local espEnabled = false
-local originalColors = {}
+-- Crear ventana principal
+local Window = Rayfield:CreateWindow({
+    Name = "Crystal ESP Menu",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "Created by Estardax",
+    ConfigurationSaving = {
+        Enabled = false,
+    },
+    KeySystem = false, -- sin key
+})
 
-local function updateESP()
-    local root = workspace:FindFirstChild("Regenator")
-    if not root then return end
-    local container = root:FindFirstChild("Regenartor")
-    if not container then return end
+-- Crear pestaña principal
+local Tab = Window:CreateTab("Main", 4483362458)
 
-    for _, model in ipairs(container:GetChildren()) do
-        if model:IsA("Model") then
-            local innerModel = model:FindFirstChild("modell")
-            if innerModel then
-                for _, part in ipairs(innerModel:GetChildren()) do
-                    if part:IsA("BasePart") then
-                        if not originalColors[part] then
-                            originalColors[part] = part.Color
+-- Toggle ESP Glasses
+Tab:CreateToggle({
+    Name = "ESP Glasses",
+    CurrentValue = false,
+    Callback = function(Value)
+        if Value then
+            -- ACTIVADO
+            local root = workspace:FindFirstChild("Regenator")
+            if not root then return end
+
+            local container = root:FindFirstChild("Regenartor")
+            if not container then return end
+
+            for _, model in ipairs(container:GetChildren()) do
+                if model:IsA("Model") then
+                    local innerModel = model:FindFirstChild("modell")
+                    if innerModel then
+                        for _, part in ipairs(innerModel:GetChildren()) do
+                            if part:IsA("BasePart") then
+                                local hasTouch = part:FindFirstChild("TouchInterest") ~= nil
+                                part.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                                part.Material = Enum.Material.Neon
+                            end
                         end
-                        local hasTouch = part:FindFirstChild("TouchInterest") ~= nil
-                        part.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
-                        part.Material = Enum.Material.Neon
+                    end
+                end
+            end
+        else
+            -- DESACTIVADO (volver a normal)
+            local root = workspace:FindFirstChild("Regenator")
+            if not root then return end
+
+            local container = root:FindFirstChild("Regenartor")
+            if not container then return end
+
+            for _, model in ipairs(container:GetChildren()) do
+                if model:IsA("Model") then
+                    local innerModel = model:FindFirstChild("modell")
+                    if innerModel then
+                        for _, part in ipairs(innerModel:GetChildren()) do
+                            if part:IsA("BasePart") then
+                                part.Color = Color3.fromRGB(255, 255, 255)
+                                part.Material = Enum.Material.Plastic
+                            end
+                        end
                     end
                 end
             end
         end
-    end
-end
+    end,
+})
 
-local function resetESP()
-    for part, color in pairs(originalColors) do
-        if part and part:IsA("BasePart") then
-            part.Color = color
-            part.Material = Enum.Material.Plastic
+-- Botón Teleport
+Tab:CreateButton({
+    Name = "Teleport",
+    Callback = function()
+        local player = game:GetService("Players").LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+
+        local targetPosition = Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875)
+
+        if character:FindFirstChild("HumanoidRootPart") then
+            character:MoveTo(targetPosition)
         end
-    end
-    originalColors = {}
-end
-
-RunService.RenderStepped:Connect(function()
-    if espEnabled then
-        updateESP()
-    end
-end)
-
-local function createGUI()
-    local existing = player:FindFirstChild("PlayerGui"):FindFirstChild("ScriptaxGUI")
-    if existing then
-        existing:Destroy()
-    end
-
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "ScriptaxGUI"
-    gui.ResetOnSpawn = false
-    gui.Parent = player:WaitForChild("PlayerGui")
-
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 220, 0, 140)
-    mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    mainFrame.BackgroundTransparency = 0.2
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Active = true
-    mainFrame.Draggable = true
-    mainFrame.Parent = gui
-
-    local frameCorner = Instance.new("UICorner")
-    frameCorner.CornerRadius = UDim.new(0, 12)
-    frameCorner.Parent = mainFrame
-
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, 0, 0, 30)
-    titleLabel.Position = UDim2.new(0, 0, 0, 0)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "Scriptax"
-    titleLabel.TextColor3 = Color3.new(1, 1, 1)
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = 20
-    titleLabel.Parent = mainFrame
-
-    local espButton = Instance.new("TextButton")
-    espButton.Size = UDim2.new(0.9, 0, 0, 40)
-    espButton.Position = UDim2.new(0.05, 0, 0, 40)
-    espButton.TextColor3 = Color3.new(1, 1, 1)
-    espButton.Font = Enum.Font.Gotham
-    espButton.TextSize = 16
-    espButton.AutoButtonColor = false
-    espButton.BorderSizePixel = 0
-    espButton.Parent = mainFrame
-
-    local espCorner = Instance.new("UICorner")
-    espCorner.CornerRadius = UDim.new(0, 8)
-    espCorner.Parent = espButton
-
-    local teleportButton = Instance.new("TextButton")
-    teleportButton.Size = UDim2.new(0.9, 0, 0, 40)
-    teleportButton.Position = UDim2.new(0.05, 0, 0, 90)
-    teleportButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    teleportButton.TextColor3 = Color3.new(1, 1, 1)
-    teleportButton.Font = Enum.Font.Gotham
-    teleportButton.TextSize = 16
-    teleportButton.Text = "Teleport"
-    teleportButton.AutoButtonColor = false
-    teleportButton.BorderSizePixel = 0
-    teleportButton.Parent = mainFrame
-
-    local tpCorner = Instance.new("UICorner")
-    tpCorner.CornerRadius = UDim.new(0, 8)
-    tpCorner.Parent = teleportButton
-
-    -- Sync ESP button state
-    local function syncESPButton()
-        espButton.Text = espEnabled and "ESP ON" or "Toggle ESP"
-        espButton.BackgroundColor3 = espEnabled and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(45, 45, 45)
-    end
-
-    syncESPButton()
-
-    espButton.MouseButton1Click:Connect(function()
-        espEnabled = not espEnabled
-        syncESPButton()
-        if espEnabled then
-            updateESP()
-        else
-            resetESP()
-        end
-    end)
-
-    teleportButton.MouseButton1Click:Connect(function()
-        local character = player.Character
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            character:MoveTo(Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875))
-        end
-    end)
-
-    local root = workspace:WaitForChild("Regenator")
-    local container = root:WaitForChild("Regenartor")
-
-    container.ChildAdded:Connect(function()
-        if espEnabled then
-            task.wait(0.1)
-            updateESP()
-        end
-    end)
-
-    container.ChildRemoved:Connect(function()
-        if espEnabled then
-            task.wait(0.1)
-            updateESP()
-        end
-    end)
-end
-
-createGUI()
-
-player.CharacterAdded:Connect(function()
-    wait(1)
-    createGUI()
-end)
+    end,
+})

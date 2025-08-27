@@ -3,92 +3,133 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Main Window
 local Window = Rayfield:CreateWindow({
-    Name = "Crystal ESP Menu",
+    Name = "Crystal ESP Menu | Scriptax",
     LoadingTitle = "Loading...",
-    LoadingSubtitle = "Created by Scriptax",
+    LoadingSubtitle = "Professional Script Menu",
     ConfigurationSaving = {
         Enabled = false,
     },
-    KeySystem = false, -- no key system
+    KeySystem = false,
+    Theme = {
+        Background = Color3.fromRGB(16, 21, 35), -- custom dark color
+        TabBackground = Color3.fromRGB(20, 25, 40),
+        Border = Color3.fromRGB(35, 40, 60),
+        TextColor = Color3.fromRGB(255, 255, 255)
+    }
 })
 
--- Main Tab
-local Tab = Window:CreateTab("Main", 4483362458)
+-- ========== ESP TAB ==========
+local TabESP = Window:CreateTab("ESP", 4483362458)
+TabESP:CreateSection("Crystal ESP")
 
--- Toggle ESP Glasses
-Tab:CreateToggle({
+local espEnabled = false
+local espLoop = nil
+
+local function ApplyESP()
+    local root = workspace:FindFirstChild("Regenator")
+    if not root then return end
+
+    local container = root:FindFirstChild("Regenartor")
+    if not container then return end
+
+    for _, model in ipairs(container:GetChildren()) do
+        if model:IsA("Model") then
+            local innerModel = model:FindFirstChild("modell")
+            if innerModel then
+                for _, part in ipairs(innerModel:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        local hasTouch = part:FindFirstChild("TouchInterest") ~= nil
+                        part.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                        part.Material = Enum.Material.Neon
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function ResetESP()
+    local root = workspace:FindFirstChild("Regenator")
+    if not root then return end
+
+    local container = root:FindFirstChild("Regenartor")
+    if not container then return end
+
+    for _, model in ipairs(container:GetChildren()) do
+        if model:IsA("Model") then
+            local innerModel = model:FindFirstChild("modell")
+            if innerModel then
+                for _, part in ipairs(innerModel:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.Color = Color3.fromRGB(255, 255, 255)
+                        part.Material = Enum.Material.Plastic
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function StartESPLoop()
+    if espLoop then return end
+    espLoop = task.spawn(function()
+        while espEnabled do
+            ApplyESP()
+            task.wait(2)
+        end
+    end)
+end
+
+local function StopESPLoop()
+    espEnabled = false
+    espLoop = nil
+    ResetESP()
+end
+
+TabESP:CreateToggle({
     Name = "ESP Glasses",
     CurrentValue = false,
     Callback = function(Value)
-        if Value then
-            -- ENABLED
-            local root = workspace:FindFirstChild("Regenator")
-            if not root then return end
-
-            local container = root:FindFirstChild("Regenartor")
-            if not container then return end
-
-            for _, model in ipairs(container:GetChildren()) do
-                if model:IsA("Model") then
-                    local innerModel = model:FindFirstChild("modell")
-                    if innerModel then
-                        for _, part in ipairs(innerModel:GetChildren()) do
-                            if part:IsA("BasePart") then
-                                local hasTouch = part:FindFirstChild("TouchInterest") ~= nil
-                                part.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
-                                part.Material = Enum.Material.Neon
-                            end
-                        end
-                    end
-                end
-            end
+        espEnabled = Value
+        if espEnabled then
+            StartESPLoop()
         else
-            -- DISABLED (reset to default)
-            local root = workspace:FindFirstChild("Regenator")
-            if not root then return end
-
-            local container = root:FindFirstChild("Regenartor")
-            if not container then return end
-
-            for _, model in ipairs(container:GetChildren()) do
-                if model:IsA("Model") then
-                    local innerModel = model:FindFirstChild("modell")
-                    if innerModel then
-                        for _, part in ipairs(innerModel:GetChildren()) do
-                            if part:IsA("BasePart") then
-                                part.Color = Color3.fromRGB(255, 255, 255)
-                                part.Material = Enum.Material.Plastic
-                            end
-                        end
-                    end
-                end
-            end
+            StopESPLoop()
         end
     end,
 })
 
--- Teleport Button
-Tab:CreateButton({
-    Name = "Teleport",
+-- ========== TELEPORT TAB ==========
+local TabTP = Window:CreateTab("Teleports", 4483362458)
+TabTP:CreateSection("Teleport Functions")
+
+local teleportPosition = Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875)
+
+TabTP:CreateButton({
+    Name = "Teleport to Secret Spot",
     Callback = function()
         local player = game:GetService("Players").LocalPlayer
         local character = player.Character or player.CharacterAdded:Wait()
-
-        local targetPosition = Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875)
-
         if character:FindFirstChild("HumanoidRootPart") then
-            character:MoveTo(targetPosition)
+            character:MoveTo(teleportPosition)
         end
     end,
 })
 
--- WalkSpeed Slider
-Tab:CreateSlider({
+-- ========== MOVEMENT TAB ==========
+local TabMovement = Window:CreateTab("Movement", 4483362458)
+TabMovement:CreateSection("Character Modifiers")
+
+local savedWalkSpeed = 16
+local savedJumpPower = 50
+
+TabMovement:CreateSlider({
     Name = "WalkSpeed",
     Range = {16, 200},
     Increment = 1,
-    CurrentValue = 16,
+    CurrentValue = savedWalkSpeed,
     Callback = function(Value)
+        savedWalkSpeed = Value
         local player = game:GetService("Players").LocalPlayer
         if player.Character and player.Character:FindFirstChild("Humanoid") then
             player.Character.Humanoid.WalkSpeed = Value
@@ -96,13 +137,13 @@ Tab:CreateSlider({
     end,
 })
 
--- JumpPower Slider
-Tab:CreateSlider({
+TabMovement:CreateSlider({
     Name = "JumpPower",
     Range = {50, 300},
     Increment = 5,
-    CurrentValue = 50,
+    CurrentValue = savedJumpPower,
     Callback = function(Value)
+        savedJumpPower = Value
         local player = game:GetService("Players").LocalPlayer
         if player.Character and player.Character:FindFirstChild("Humanoid") then
             player.Character.Humanoid.JumpPower = Value
@@ -110,5 +151,84 @@ Tab:CreateSlider({
     end,
 })
 
--- Signature Label
-Tab:CreateLabel("Made by Scriptax ⚡")
+game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid").WalkSpeed = savedWalkSpeed
+    char:WaitForChild("Humanoid").JumpPower = savedJumpPower
+end)
+
+-- ========== AUTOFARM TAB ==========
+local TabFarm = Window:CreateTab("AutoFarm", 4483362458)
+TabFarm:CreateSection("Automation")
+
+local farmEnabled = false
+local farmLoop = nil
+
+local function StartFarmLoop()
+    if farmLoop then return end
+    farmLoop = task.spawn(function()
+        while farmEnabled do
+            local player = game:GetService("Players").LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+            if character:FindFirstChild("HumanoidRootPart") then
+                character:MoveTo(teleportPosition)
+            end
+            task.wait(3) -- teleport every 3 seconds
+        end
+    end)
+end
+
+local function StopFarmLoop()
+    farmEnabled = false
+    farmLoop = nil
+end
+
+TabFarm:CreateToggle({
+    Name = "AutoFarm Teleport",
+    CurrentValue = false,
+    Callback = function(Value)
+        farmEnabled = Value
+        if farmEnabled then
+            StartFarmLoop()
+        else
+            StopFarmLoop()
+        end
+    end,
+})
+
+-- ========== KEYBINDS TAB ==========
+local TabKeys = Window:CreateTab("Keybinds", 4483362458)
+TabKeys:CreateSection("Custom Keybinds")
+
+TabKeys:CreateKeybind({
+    Name = "Toggle ESP Key",
+    CurrentKeybind = "E",
+    HoldToInteract = false,
+    Callback = function()
+        espEnabled = not espEnabled
+        if espEnabled then
+            StartESPLoop()
+        else
+            StopESPLoop()
+        end
+    end,
+})
+
+TabKeys:CreateKeybind({
+    Name = "Teleport Key",
+    CurrentKeybind = "T",
+    HoldToInteract = false,
+    Callback = function()
+        local player = game:GetService("Players").LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        if character:FindFirstChild("HumanoidRootPart") then
+            character:MoveTo(teleportPosition)
+        end
+    end,
+})
+
+-- ========== CREDITS TAB ==========
+local TabCredits = Window:CreateTab("Credits", 4483362458)
+TabCredits:CreateSection("Script Information")
+TabCredits:CreateLabel("Crystal ESP Menu | Made by Scriptax ⚡")
+TabCredits:CreateLabel("UI powered by Rayfield Library")
+TabCredits:CreateLabel("Special thanks to Scriptax Community")

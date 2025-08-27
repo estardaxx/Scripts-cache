@@ -1,7 +1,7 @@
 -- Load Rayfield
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- ================= WINDOW =================
+-- ================= WINDOW ================
 local Window = Rayfield:CreateWindow({
     Name = "Crystal ESP Menu | Scriptax",
     LoadingTitle = "Loading...",

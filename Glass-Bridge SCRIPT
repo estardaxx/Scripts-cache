@@ -1,4 +1,4 @@
--- Load Rayfield (official)
+-- Load Rayfield
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- ================= WINDOW =================
@@ -7,7 +7,7 @@ local Window = Rayfield:CreateWindow({
     LoadingTitle = "Loading...",
     LoadingSubtitle = "Professional Script Menu",
     ShowText = "Open Menu",
-    Theme = "Serenity",            -- minimal, modern theme from Rayfield docs
+    Theme = "Midnight",            -- tema actual
     ToggleUIKeybind = Enum.KeyCode.RightShift,
     KeySystem = false,
     ConfigurationSaving = { Enabled = false }
@@ -37,7 +37,6 @@ local function applyESPOnce()
             if inner then
                 for _, part in ipairs(inner:GetChildren()) do
                     if part:IsA("BasePart") then
-                        -- save original only once
                         if not originalProps[part] then
                             originalProps[part] = { Color = part.Color, Material = part.Material }
                         end
@@ -58,7 +57,7 @@ local function resetESP()
             part.Material = props.Material
         end
     end
-    originalProps = {} -- clear map
+    originalProps = {}
 end
 
 local function startESPLoop()
@@ -66,7 +65,7 @@ local function startESPLoop()
     espLoop = task.spawn(function()
         while espEnabled do
             applyESPOnce()
-            task.wait(2) -- re-apply periodically so it survives regen
+            task.wait(2)
         end
     end)
 end
@@ -108,7 +107,7 @@ local function startFarm()
     farmLoop = task.spawn(function()
         while farmEnabled do
             doTeleport()
-            task.wait(0.75) -- 4x faster than 3s
+            task.wait(0.75)
         end
     end)
 end
@@ -118,8 +117,7 @@ local function stopFarm()
 end
 
 -- =================== TAB: MAIN ===================
-local TabMain = Window:CreateTab("Main", "layers") -- lucide icon
-
+local TabMain = Window:CreateTab("Main", "layers")
 TabMain:CreateSection("ESP")
 TabMain:CreateToggle({
     Name = "ESP Glasses",
@@ -158,32 +156,13 @@ TabMain:CreateSlider({
     end,
 })
 
-TabMain:CreateSection("Keybinds")
-TabMain:CreateKeybind({
-    Name = "Toggle ESP",
-    CurrentKeybind = "E",
-    HoldToInteract = false,
-    Callback = function()
-        espEnabled = not espEnabled
-        if espEnabled then startESPLoop() else stopESPLoop() end
-    end,
-})
-TabMain:CreateKeybind({
-    Name = "Quick Teleport",
-    CurrentKeybind = "T",
-    HoldToInteract = false,
-    Callback = doTeleport
-})
-
 -- ================= TAB: TELEPORTS =================
 local TabTP = Window:CreateTab("Teleports", "map-pin")
 TabTP:CreateSection("Positions")
-
 TabTP:CreateButton({
     Name = "Teleport to Final",
     Callback = doTeleport
 })
-
 TabTP:CreateSection("AutoFarm")
 TabTP:CreateToggle({
     Name = "AutoFarm Teleport (0.75s)",
@@ -192,6 +171,34 @@ TabTP:CreateToggle({
         farmEnabled = v
         if v then startFarm() else stopFarm() end
     end,
+})
+
+-- ================= TAB: KEYBINDS =================
+local TabKeys = Window:CreateTab("Keybinds", "keyboard")
+TabKeys:CreateSection("Custom Keybinds")
+
+TabKeys:CreateKeybind({
+    Name = "Toggle ESP",
+    CurrentKeybind = "", -- vacío
+    HoldToInteract = false,
+    Callback = function()
+        espEnabled = not espEnabled
+        if espEnabled then startESPLoop() else stopESPLoop() end
+    end,
+})
+
+TabKeys:CreateKeybind({
+    Name = "Quick Teleport",
+    CurrentKeybind = "", -- vacío
+    HoldToInteract = false,
+    Callback = doTeleport
+})
+
+TabKeys:CreateKeybind({
+    Name = "Empty Keybind",
+    CurrentKeybind = "", -- vacío
+    HoldToInteract = false,
+    Callback = function() end
 })
 
 -- ================== CREDITS ==================

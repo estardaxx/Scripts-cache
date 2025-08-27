@@ -16,7 +16,7 @@ local function createWindow(profileName)
         LoadingSubtitle = "Professional Script Menu",
         ShowText = "Open Menu",
         Theme = "Serenity",
-        ToggleUIKeybind = "RightShift", -- As string to avoid Enum error
+        ToggleUIKeybind = "G", -- Changed to G to avoid error
         KeySystem = false,
         ConfigurationSaving = { 
             Enabled = true, 
@@ -400,8 +400,19 @@ local function createWindow(profileName)
         Callback = doTeleport
     })
 
+    TabKeys:CreateKeybind({
+        Name = "Toggle Fly",
+        CurrentKeybind = "",
+        HoldToInteract = false,
+        Flag = "Keybind_Fly",
+        Callback = function()
+            flyEnabled = not flyEnabled
+            toggleFly(flyEnabled)
+        end,
+    })
+
     -- Label informativo sobre la tecla para abrir/cerrar el menú
-    TabKeys:CreateLabel("Press RightShift to open/close the menu")
+    TabKeys:CreateLabel("Press G to open/close the menu")
 
     -- ================== TAB: PROFILES ==================
     local TabProfiles = Window:CreateTab("Profiles", "user")

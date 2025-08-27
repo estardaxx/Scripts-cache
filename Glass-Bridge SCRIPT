@@ -1,204 +1,357 @@
 -- Load Rayfield
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- ================= WINDOW ================
-local Window = Rayfield:CreateWindow({
-    Name = "Crystal ESP Menu | Scriptax",
-    LoadingTitle = "Loading...",
-    LoadingSubtitle = "Professional Script Menu",
-    ShowText = "Open Menu",
-    Theme = "Serenity",            -- tema actualizado
-    ToggleUIKeybind = Enum.KeyCode.RightShift,
-    KeySystem = false,
-    ConfigurationSaving = { Enabled = false }
-})
-
--- ================== SHARED VARS ==================
+-- Services
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 
--- ===== ESP: stores originals so we can restore =====
-local espEnabled = false
-local espLoop    = nil
-local originalProps = {}  -- [part] = {Color=..., Material=...}
+-- Function to create the window
+local function createWindow()
+    local Window = Rayfield:CreateWindow({
+        Name = "Crystal ESP Menu | Scriptax",
+        LoadingTitle = "Loading...",
+        LoadingSubtitle = "Professional Script Menu",
+        ShowText = "Open Menu",
+        Theme = "Serenity",
+        ToggleUIKeybind = "G",
+        KeySystem = false,
+        ConfigurationSaving = { 
+            Enabled = true, 
+            FolderName = "ScriptaxConfig", 
+            FileName = "Default" 
+        }
+    })
 
-local function getContainer()
-    local root = workspace:FindFirstChild("Regenator")
-    if not root then return nil end
-    return root:FindFirstChild("Regenartor")
-end
+    -- ================== SHARED VARS ==================
+    local espEnabled = false
+    local espLoop = nil
+    local originalProps = {}  -- [part] = {Color=..., Material=...}
 
-local function applyESPOnce()
-    local container = getContainer()
-    if not container then return end
-    for _, model in ipairs(container:GetChildren()) do
-        if model:IsA("Model") then
-            local inner = model:FindFirstChild("modell")
-            if inner then
-                for _, part in ipairs(inner:GetChildren()) do
-                    if part:IsA("BasePart") then
-                        if not originalProps[part] then
-                            originalProps[part] = { Color = part.Color, Material = part.Material }
+    local function getContainer()
+        local root = workspace:FindFirstChild("Regenator")
+        if not root then return nil end
+        return root:FindFirstChild("Regenartor")
+    end
+
+    local function applyESPOnce()
+        local container = getContainer()
+        if not container then return end
+        for _, model in ipairs(container:GetChildren()) do
+            if model:IsA("Model") then
+                local inner = model:FindFirstChild("modell")
+                if inner then
+                    for _, part in ipairs(inner:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            if not originalProps[part] then
+                                originalProps[part] = { Color = part.Color, Material = part.Material }
+                            end
+                            local hasTouch = part:FindFirstChild("TouchInterest") ~= nil
+                            part.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
+                            part.Material = Enum.Material.Neon
                         end
-                        local hasTouch = part:FindFirstChild("TouchInterest") ~= nil
-                        part.Color = hasTouch and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
-                        part.Material = Enum.Material.Neon
                     end
                 end
             end
         end
     end
-end
 
-local function resetESP()
-    for part, props in pairs(originalProps) do
-        if typeof(part) == "Instance" and part and part.Parent then
-            part.Color = props.Color
-            part.Material = props.Material
+    local function resetESP()
+        for part, props in pairs(originalProps) do
+            if typeof(part) == "Instance" and part and part.Parent then
+                part.Color = props.Color
+                part.Material = props.Material
+            end
+        end
+        originalProps = {}
+    end
+
+    local function startESPLoop()
+        if espLoop then return end
+        espLoop = task.spawn(function()
+            while espEnabled do
+                applyESPOnce()
+                task.wait(2)
+            end
+        end)
+    end
+
+    local function stopESPLoop()
+        espEnabled = false
+        resetESP()
+        espLoop = nil
+    end
+
+    -- ========= MOVEMENT (persists on respawn) =========
+    local savedWalkSpeed = 16
+    local savedJumpPower = 50
+
+    local function applyMovementTo(char)
+        local hum = char:WaitForChild("Humanoid")
+        hum.WalkSpeed = savedWalkSpeed
+        hum.JumpPower = savedJumpPower
+    end
+
+    LocalPlayer.CharacterAdded:Connect(applyMovementTo)
+    if LocalPlayer.Character then
+        task.spawn(function() applyMovementTo(LocalPlayer.Character) end)
+    end
+
+    -- ========= TELEPORT / AUTOFARM =========
+    local teleportPosition = Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875)
+
+    local function doTeleport()
+        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then char:MoveTo(teleportPosition) end
+    end
+
+    local farmEnabled = false
+    local farmLoop = nil
+    local function startFarm()
+        if farmLoop then return end
+        farmLoop = task.spawn(function()
+            while farmEnabled do
+                doTeleport()
+                task.wait(0.75)
+            end
+        end)
+    end
+    local function stopFarm()
+        farmEnabled = false
+        farmLoop = nil
+    end
+
+    -- ========= COUNTER GUI =========
+    local counterEnabled = false
+    local CounterGui = nil
+    local CounterLabel = nil
+    local contador = game.Workspace["Glass bridge"].Timer.SurfaceGui.ClockTimer
+    local positionFile = "ScriptaxConfig/Default_position.json"
+
+    local function savePosition(frame)
+        if isfile and writefile then
+            local pos = { x = frame.Position.X.Offset, y = frame.Position.Y.Offset }
+            writefile(positionFile, HttpService:JSONEncode(pos))
         end
     end
-    originalProps = {}
-end
 
-local function startESPLoop()
-    if espLoop then return end
-    espLoop = task.spawn(function()
-        while espEnabled do
-            applyESPOnce()
-            task.wait(2)
+    local function loadPosition(frame)
+        if isfile and readfile then
+            if isfile(positionFile) then
+                local pos = HttpService:JSONDecode(readfile(positionFile))
+                frame.Position = UDim2.new(0.5, pos.x, 0, pos.y + 10) -- Adjust for top
+            end
         end
-    end)
-end
+    end
 
-local function stopESPLoop()
-    espEnabled = false
-    resetESP()
-    espLoop = nil
-end
+    local function makeDraggable(frame)
+        local dragging = false
+        local dragInput, dragStart, startPos
 
--- ========= MOVEMENT (persists on respawn) =========
-local savedWalkSpeed = 16
-local savedJumpPower = 50
+        frame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = frame.Position
+            end
+        end)
 
-local function applyMovementTo(char)
-    local hum = char:WaitForChild("Humanoid")
-    hum.WalkSpeed = savedWalkSpeed
-    hum.JumpPower = savedJumpPower
-end
+        frame.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                dragInput = input
+            end
+        end)
 
-LocalPlayer.CharacterAdded:Connect(applyMovementTo)
-if LocalPlayer.Character then
-    task.spawn(function() applyMovementTo(LocalPlayer.Character) end)
-end
+        UserInputService.InputChanged:Connect(function(input)
+            if input == dragInput and dragging then
+                local delta = input.Position - dragStart
+                frame.Position = UDim2.new(
+                    startPos.X.Scale,
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale,
+                    startPos.Y.Offset + delta.Y
+                )
+                savePosition(frame) -- Save on drag
+            end
+        end)
 
--- ========= TELEPORT / AUTOFARM =========
-local teleportPosition = Vector3.new(-0.7761471271514893, 555.5330200195312, -288.62420654296875)
+        frame.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+    end
 
-local function doTeleport()
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if hrp then char:MoveTo(teleportPosition) end
-end
+    local function toggleCounter(v)
+        counterEnabled = v
+        if v then
+            -- Create ScreenGui
+            CounterGui = Instance.new("ScreenGui")
+            CounterGui.Parent = LocalPlayer.PlayerGui
+            CounterGui.Name = "TimerGui"
+            CounterGui.ResetOnSpawn = false
 
-local farmEnabled = false
-local farmLoop = nil
-local function startFarm()
-    if farmLoop then return end
-    farmLoop = task.spawn(function()
-        while farmEnabled do
-            doTeleport()
-            task.wait(0.75)
+            -- Create Frame (background)
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(0, 100, 0, 30)
+            frame.Position = UDim2.new(0.5, -50, 0, 10) -- Top center default
+            frame.BackgroundColor3 = Color3.new(1, 1, 1) -- White
+            frame.BorderSizePixel = 0
+            frame.Parent = CounterGui
+
+            -- Soft borders
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 5)
+            corner.Parent = frame
+
+            -- Create TextLabel
+            CounterLabel = Instance.new("TextLabel")
+            CounterLabel.Size = UDim2.new(1, 0, 1, 0)
+            CounterLabel.BackgroundTransparency = 1
+            CounterLabel.Text = contador.Text
+            CounterLabel.TextColor3 = Color3.new(0, 0, 0) -- Black
+            CounterLabel.TextScaled = true
+            CounterLabel.Font = Enum.Font.SourceSansBold
+            CounterLabel.Parent = frame
+
+            -- Load saved position
+            loadPosition(frame)
+
+            -- Make it draggable
+            makeDraggable(frame)
+
+            -- Update label when contador changes
+            contador:GetPropertyChangedSignal("Text"):Connect(function()
+                if counterEnabled and CounterLabel then
+                    CounterLabel.Text = contador.Text
+                end
+            end)
+        else
+            if CounterGui then
+                savePosition(CounterGui:FindFirstChild("Frame")) -- Save before destroy
+                CounterGui:Destroy()
+                CounterGui = nil
+                CounterLabel = nil
+            end
         end
-    end)
-end
-local function stopFarm()
-    farmEnabled = false
-    farmLoop = nil
-end
+    end
 
--- =================== TAB: MAIN ===================
-local TabMain = Window:CreateTab("Main", "layers")
-TabMain:CreateSection("ESP")
-TabMain:CreateToggle({
-    Name = "ESP Glasses",
-    CurrentValue = false,
-    Callback = function(v)
-        espEnabled = v
-        if v then startESPLoop() else stopESPLoop() end
-    end,
-})
+    -- =================== TAB: MAIN ===================
+    local TabMain = Window:CreateTab("Main", "layers")
+    TabMain:CreateSection("ESP")
+    TabMain:CreateToggle({
+        Name = "ESP Glasses",
+        CurrentValue = false,
+        Flag = "ESP_Glasses",
+        Callback = function(v)
+            espEnabled = v
+            if v then startESPLoop() else stopESPLoop() end
+        end,
+    })
 
-TabMain:CreateSection("Movement")
-TabMain:CreateSlider({
-    Name = "WalkSpeed",
-    Range = {16, 200},
-    Increment = 1,
-    CurrentValue = savedWalkSpeed,
-    Callback = function(val)
-        savedWalkSpeed = val
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.WalkSpeed = val
+    TabMain:CreateSection("Timer")
+    TabMain:CreateToggle({
+        Name = "Timer",
+        CurrentValue = false,
+        Flag = "Timer",
+        Callback = function(v)
+            toggleCounter(v)
+        end,
+    })
+
+    TabMain:CreateSection("Movement")
+    TabMain:CreateSlider({
+        Name = "WalkSpeed",
+        Range = {16, 200},
+        Increment = 1,
+        CurrentValue = savedWalkSpeed,
+        Flag = "WalkSpeed",
+        Callback = function(val)
+            savedWalkSpeed = val
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid.WalkSpeed = val
+            end
+        end,
+    })
+    TabMain:CreateSlider({
+        Name = "JumpPower",
+        Range = {50, 300},
+        Increment = 5,
+        CurrentValue = savedJumpPower,
+        Flag = "JumpPower",
+        Callback = function(val)
+            savedJumpPower = val
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid.JumpPower = val
+            end
+        end,
+    })
+    TabMain:CreateButton({
+        Name = "Infinity Yield",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
         end
-    end,
-})
-TabMain:CreateSlider({
-    Name = "JumpPower",
-    Range = {50, 300},
-    Increment = 5,
-    CurrentValue = savedJumpPower,
-    Callback = function(val)
-        savedJumpPower = val
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid.JumpPower = val
-        end
-    end,
-})
+    })
+    TabMain:CreateLabel("Infinity Yield loads an external script with additional features.")
 
--- ================= TAB: TELEPORTS =================
-local TabTP = Window:CreateTab("Teleports", "map-pin")
-TabTP:CreateSection("Positions")
-TabTP:CreateButton({
-    Name = "Teleport to Final",
-    Callback = doTeleport
-})
-TabTP:CreateSection("AutoFarm")
-TabTP:CreateToggle({
-    Name = "AutoFarm Teleport",
-    CurrentValue = false,
-    Callback = function(v)
-        farmEnabled = v
-        if v then startFarm() else stopFarm() end
-    end,
-})
+    TabMain:CreateSection("Configuration")
+    TabMain:CreateLabel("Configurations save automatically on changes.")
 
--- ================= TAB: KEYBINDS =================
-local TabKeys = Window:CreateTab("Keybinds", "keyboard")
-TabKeys:CreateSection("Custom Keybinds")
+    -- ================= TAB: TELEPORTS =================
+    local TabTP = Window:CreateTab("Teleports", "map-pin")
+    TabTP:CreateSection("Positions")
+    TabTP:CreateButton({
+        Name = "Teleport to Final",
+        Callback = doTeleport
+    })
+    TabTP:CreateSection("AutoFarm")
+    TabTP:CreateToggle({
+        Name = "AutoFarm Teleport",
+        CurrentValue = false,
+        Flag = "AutoFarm",
+        Callback = function(v)
+            farmEnabled = v
+            if v then startFarm() else stopFarm() end
+        end,
+    })
 
-TabKeys:CreateKeybind({
-    Name = "Toggle ESP",
-    CurrentKeybind = "", -- vacío
-    HoldToInteract = false,
-    Callback = function()
-        espEnabled = not espEnabled
-        if espEnabled then startESPLoop() else stopESPLoop() end
-    end,
-})
+    -- ================= TAB: KEYBINDS =================
+    local TabKeys = Window:CreateTab("Keybinds", "keyboard")
+    TabKeys:CreateSection("Custom Keybinds")
 
-TabKeys:CreateKeybind({
-    Name = "Quick Teleport",
-    CurrentKeybind = "", -- vacío
-    HoldToInteract = false,
-    Callback = doTeleport
-})
+    TabKeys:CreateKeybind({
+        Name = "Toggle ESP",
+        CurrentKeybind = "",
+        HoldToInteract = false,
+        Flag = "Keybind_ESP",
+        Callback = function()
+            espEnabled = not espEnabled
+            if espEnabled then startESPLoop() else stopESPLoop() end
+        end,
+    })
 
--- Label informativo sobre la tecla para abrir/cerrar el menú
-TabKeys:CreateLabel("Press RightShift to open/close the menu")
+    TabKeys:CreateKeybind({
+        Name = "Quick Teleport",
+        CurrentKeybind = "",
+        HoldToInteract = false,
+        Flag = "Keybind_Teleport",
+        Callback = doTeleport
+    })
 
--- ================== CREDITS ==================
-local TabCredits = Window:CreateTab("Credits", "award")
-TabCredits:CreateSection("Script Information")
-TabCredits:CreateLabel("Crystal ESP Menu | Made by Estardax ⚡")
-TabCredits:CreateLabel("UI powered by Rayfield Library")
+    TabKeys:CreateLabel("Press G to open/close the menu")
+
+    -- ================== CREDITS ==================
+    local TabCredits = Window:CreateTab("Credits", "award")
+    TabCredits:CreateSection("Script Information")
+    TabCredits:CreateLabel("Crystal ESP Menu | Made by Estardax ⚡")
+    TabCredits:CreateLabel("UI powered by Rayfield Library")
+
+    return Window
+end
+
+-- Initial creation with default profile
+createWindow()

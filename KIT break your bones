@@ -1,5 +1,5 @@
 -- Execute the two provided scripts
-loadstring(game:HttpGet("https://raw.githubusercontent.com/ACE97x/Games/refs/heads/main/breakabone"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/BreakyourBones"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/hassanxzayn-lua/Anti-afk/main/antiafkbyhassanxzyn"))()
 
 -- Create the UI
